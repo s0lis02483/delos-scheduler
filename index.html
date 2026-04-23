@@ -52,6 +52,7 @@ const T = {
     nextAvailable: 'Next available:', bookedBy: 'Booked by',
     alreadyBooked: 'You already have a booking here',
     carLegend: 'Car booking', apptLegend: 'Appointment',
+    everyone: 'Everyone',
     todaySchedule: "Today's schedule",
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
     language: 'Language', signOut: 'Sign out',
@@ -76,6 +77,7 @@ const T = {
     nextAvailable: 'Naslednji prosti:', bookedBy: 'Rezerviral/a',
     alreadyBooked: 'Tukaj že imate rezervacijo',
     carLegend: 'Rezervacija vozila', apptLegend: 'Sestanek',
+    everyone: 'Vsi',
     todaySchedule: 'Urnik za danes',
     settings: 'Nastavitve', appearance: 'Videz', darkMode: 'Temni način',
     language: 'Jezik', signOut: 'Odjava',
@@ -562,6 +564,8 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   const [weekStart, setWeekStart]=useState(startOfWeek(today));
   const [focusDay, setFocusDay]=useState(today);
   const [toast, setToast]=useState(null);
+  const [filterUser, setFilterUser]=useState('all');
+  const [showPicker, setShowPicker]=useState(false);
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
   function handleBook({type,date,start,end,note,userId}) {
@@ -571,6 +575,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   }
 
   const blue=tweaks.primaryColor||'#0E76BC';
+  const filteredBookings = filterUser==='all' ? bookings : bookings.filter(b=>b.userId===filterUser);
   const weekEnd=addDays(weekStart,6);
   const navLabel=view==='week'
     ?`${t.months[weekStart.getMonth()].slice(0,3)} ${weekStart.getDate()} – ${weekEnd.getMonth()!==weekStart.getMonth()?t.months[weekEnd.getMonth()].slice(0,3)+' ':''}${weekEnd.getDate()}, ${weekEnd.getFullYear()}`
@@ -593,9 +598,35 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
             </button>
           ))}
         </div>
+        <div style={{ position:'relative', marginLeft:4 }}>
+          <button onClick={()=>setShowPicker(p=>!p)}
+            style={{ height:32, padding:'0 10px', borderRadius:8, border:`1.5px solid ${filterUser==='all'?c.border:c.blue}`, background:filterUser==='all'?c.bgMid:c.blueBg, color:filterUser==='all'?c.textSub:c.blue, fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+            {filterUser==='all'
+              ? <><span style={{fontSize:14}}>👥</span> {t.everyone}</>
+              : <><span style={{ width:20, height:20, borderRadius:'50%', background:c.blue, color:'#fff', fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{USERS.find(u=>u.id===filterUser)?.initials}</span> {USERS.find(u=>u.id===filterUser)?.name.split(' ')[0]}</>
+            }
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          {showPicker&&<div onClick={()=>setShowPicker(false)} style={{ position:'fixed', inset:0, zIndex:49 }}/>}
+          {showPicker&&(
+            <div style={{ position:'absolute', top:36, right:0, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:12, padding:6, zIndex:50, minWidth:160, boxShadow:c.shadow }}>
+              {[{id:'all',name:t.everyone,initials:'👥'},...USERS].map(u=>(
+                <button key={u.id} onClick={()=>{setFilterUser(u.id);setShowPicker(false);}}
+                  style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 10px', borderRadius:8, border:'none', background:filterUser===u.id?c.blueBg:'transparent', color:filterUser===u.id?c.blue:c.text, fontWeight:filterUser===u.id?600:400, fontSize:13, cursor:'pointer', textAlign:'left' }}>
+                  {u.id==='all'
+                    ? <span style={{fontSize:16}}>👥</span>
+                    : <span style={{ width:24, height:24, borderRadius:'50%', background:c.blue+'33', color:c.blue, fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{u.initials}</span>
+                  }
+                  {u.name}
+                  {filterUser===u.id&&<svg style={{marginLeft:'auto'}} width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <CalendarGrid view={view} weekStart={weekStart} focusDate={focusDay} bookings={bookings}
+      <CalendarGrid view={view} weekStart={weekStart} focusDate={focusDay} bookings={filteredBookings}
         onSlotClick={setSlot} user={user} tweaks={tweaks} today={today} c={c} t={t}/>
 
       <div style={{ display:'flex', gap:16, padding:'7px 16px', borderTop:`1px solid ${c.border}`, flexShrink:0, justifyContent:'center', background:c.bg }}>
