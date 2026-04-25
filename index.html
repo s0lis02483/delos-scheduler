@@ -268,7 +268,8 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
         <h2 style={{ fontSize:17, fontWeight:700, color:c.text, letterSpacing:'-0.3px' }}>{t.settings}</h2>
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', padding:'20px 16px', display:'flex', flexDirection:'column', gap:8 }}>
+      <div style={{ flex:1, overflowY:'auto' }}>
+      <div style={{ padding:'20px 16px', display:'flex', flexDirection:'column', gap:8 }}>
 
         {/* User card */}
         <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px', background:c.bgSoft, borderRadius:16 }}>
@@ -452,6 +453,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           </button>
         </div>
 
+      </div>
       </div>
     </div>
   );
