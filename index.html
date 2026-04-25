@@ -179,6 +179,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
   const [newPw, setNewPw] = useState('');
   const [conPw, setConPw] = useState('');
   const [pwMsg, setPwMsg] = useState(null);
+  const [showPwForm, setShowPwForm] = useState(false);
 
   async function handleChangePassword(e) {
     e.preventDefault();
@@ -342,22 +343,34 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
         </>)}
 
         {/* Change password */}
-        <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.changePassword}</p>
-        <div style={{ background:c.bgSoft, borderRadius:16, padding:'16px', display:'flex', flexDirection:'column', gap:10 }}>
-          <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder={t.currentPassword}
-            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t.newPassword}
-            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-          <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword}
-            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-          {pwMsg && <p style={{ fontSize:13, fontWeight:600, color:pwMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{pwMsg.text}</p>}
-          <button onClick={handleChangePassword}
-            style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer' }}>
-            {t.changePassword}
+        <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
+          <button onClick={()=>{setShowPwForm(p=>!p); setPwMsg(null); setCurPw(''); setNewPw(''); setConPw('');}}
+            style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🔑</div>
+              <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.changePassword}</span>
+            </div>
+            <svg style={{ transform:showPwForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
+          {showPwForm && (
+            <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
+              <div style={{ height:12 }}/>
+              <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder={t.currentPassword}
+                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+              <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t.newPassword}
+                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+              <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword}
+                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+              {pwMsg && <p style={{ fontSize:13, fontWeight:600, color:pwMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{pwMsg.text}</p>}
+              <button onClick={handleChangePassword}
+                style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                {t.changePassword}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Sign out */}
