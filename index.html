@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; width: 100%; }
@@ -33,6 +34,14 @@
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ─── Supabase ─────────────────────────────────────────────────────────────────
+const sb = window.supabase.createClient(
+  'https://qbayuslffeqwiutgbqot.supabase.co',
+  'sb_publishable_mc5GV0D0-hsPzKD5rhyDQg_a3K5ZpYK'
+);
+function dbToBooking(r) { return { id:r.id, type:r.type, userId:r.user_id, date:r.date, start:r.start_min, end:r.end_min, note:r.note||'' }; }
+function bookingToDb(b) { return { id:b.id, type:b.type, user_id:b.userId, date:b.date, start_min:b.start, end_min:b.end, note:b.note||'' }; }
 
 // ─── Translations ──────────────────────────────────────────────────────────────
 
@@ -388,14 +397,22 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
   const upcoming=myToday.filter(b=>b.end>nowMin);
   const past=myToday.filter(b=>b.end<=nowMin);
 
-  const [todos, setTodos]=useState(()=>{ const s=localStorage.getItem('delos_todos_'+user.id); return s?JSON.parse(s):[]; });
+  const [todos, setTodos]=useState([]);
   const [newTodo, setNewTodo]=useState('');
 
-  useEffect(()=>{ localStorage.setItem('delos_todos_'+user.id, JSON.stringify(todos)); },[todos]);
+  useEffect(()=>{
+    sb.from('todos').select('*').eq('user_id',user.id).order('created_at').then(({data})=>{ if(data) setTodos(data.map(r=>({id:r.id,text:r.text,done:r.done}))); });
+    const ch=sb.channel('todos-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'todos',filter:`user_id=eq.${user.id}`},(p)=>{
+      if(p.eventType==='INSERT') setTodos(prev=>prev.some(t=>t.id===p.new.id)?prev:[...prev,{id:p.new.id,text:p.new.text,done:p.new.done}]);
+      if(p.eventType==='UPDATE') setTodos(prev=>prev.map(t=>t.id===p.new.id?{...t,done:p.new.done}:t));
+      if(p.eventType==='DELETE') setTodos(prev=>prev.filter(t=>t.id!==p.old.id));
+    }).subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[user.id]);
 
-  function addTodo(e) { e.preventDefault(); const tx=newTodo.trim(); if(!tx)return; setTodos(p=>[...p,{id:Date.now(),text:tx,done:false}]); setNewTodo(''); }
-  function toggleTodo(id) { setTodos(p=>p.map(t=>t.id===id?{...t,done:!t.done}:t)); }
-  function deleteTodo(id) { setTodos(p=>p.filter(t=>t.id!==id)); }
+  function addTodo(e) { e.preventDefault(); const tx=newTodo.trim(); if(!tx)return; const id=`t${Date.now()}`; setTodos(p=>[...p,{id,text:tx,done:false}]); sb.from('todos').insert({id,user_id:user.id,text:tx,done:false}); setNewTodo(''); }
+  function toggleTodo(id) { setTodos(p=>p.map(t=>t.id===id?{...t,done:!t.done}:t)); sb.from('todos').update({done:todos.find(t=>t.id===id)?.done===false?true:false}).eq('id',id); }
+  function deleteTodo(id) { setTodos(p=>p.filter(t=>t.id!==id)); sb.from('todos').delete().eq('id',id); }
 
   const dayIdx=today.getDay()===0?6:today.getDay()-1;
   const dateStr=`${t.daysFull[dayIdx]}, ${t.months[today.getMonth()]} ${today.getDate()}`;
@@ -569,7 +586,9 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
   function handleBook({type,date,start,end,note,userId}) {
-    setBookings(prev=>[...prev,{id:`b${Date.now()}`,type,userId,date,start,end,note}]);
+    const b={id:`b${Date.now()}`,type,userId,date,start,end,note};
+    setBookings(prev=>[...prev,b]);
+    sb.from('bookings').insert(bookingToDb(b));
     setSlot(null);
     showToast(type==='car'?`🚗 ${t.carBooking}!`:`📋 ${t.appointment}!`, type==='car'?tweaks.primaryColor:tweaks.appointmentColor);
   }
@@ -701,11 +720,19 @@ function Sidebar({ user, bookings, tweaks, today, activeTab, setActiveTab, onOpe
 function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark, onToggleLang }) {
   const today=useMemo(()=>getToday(),[]);
   const [activeTab, setActiveTab]=useState('today');
-  const [bookings, setBookings]=useState(()=>{ const s=localStorage.getItem('delos_bookings'); return s?JSON.parse(s):[]; });
+  const [bookings, setBookings]=useState([]);
   const [slot, setSlot]=useState(null);
   const [showSettings, setShowSettings]=useState(false);
 
-  useEffect(()=>{ localStorage.setItem('delos_bookings',JSON.stringify(bookings)); },[bookings]);
+  useEffect(()=>{
+    sb.from('bookings').select('*').then(({data})=>{ if(data) setBookings(data.map(dbToBooking)); });
+    const ch=sb.channel('bookings-all').on('postgres_changes',{event:'*',schema:'public',table:'bookings'},(p)=>{
+      if(p.eventType==='INSERT') setBookings(prev=>prev.some(b=>b.id===p.new.id)?prev:[...prev,dbToBooking(p.new)]);
+      if(p.eventType==='UPDATE') setBookings(prev=>prev.map(b=>b.id===p.new.id?dbToBooking(p.new):b));
+      if(p.eventType==='DELETE') setBookings(prev=>prev.filter(b=>b.id!==p.old.id));
+    }).subscribe();
+    return ()=>sb.removeChannel(ch);
+  },[]);
 
   const t=T[lang]||T.en;
   const c=useMemo(()=>mkTheme(dark, tweaks.primaryColor, tweaks.appointmentColor),[dark, tweaks.primaryColor, tweaks.appointmentColor]);
