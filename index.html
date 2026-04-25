@@ -627,11 +627,16 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   const [showPicker, setShowPicker]=useState(false);
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
-  function handleBook({type,date,start,end,note,userId}) {
+  async function handleBook({type,date,start,end,note,userId}) {
     const b={id:`b${Date.now()}`,type,userId,date,start,end,note};
     setBookings(prev=>[...prev,b]);
-    sb.from('bookings').insert(bookingToDb(b));
     setSlot(null);
+    const {error} = await sb.from('bookings').insert(bookingToDb(b));
+    if(error) {
+      setBookings(prev=>prev.filter(x=>x.id!==b.id));
+      showToast('❌ ' + error.message, '#FF3B30');
+      return;
+    }
     showToast(type==='car'?`🚗 ${t.carBooking}!`:`📋 ${t.appointment}!`, type==='car'?tweaks.primaryColor:tweaks.appointmentColor);
   }
 
@@ -767,7 +772,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
   const [showSettings, setShowSettings]=useState(false);
 
   useEffect(()=>{
-    sb.from('bookings').select('*').then(({data})=>{ if(data) setBookings(data.map(dbToBooking)); });
+    sb.from('bookings').select('*').then(({data,error})=>{ if(data) setBookings(data.map(dbToBooking)); });
     const ch=sb.channel('bookings-all').on('postgres_changes',{event:'*',schema:'public',table:'bookings'},(p)=>{
       if(p.eventType==='INSERT') setBookings(prev=>prev.some(b=>b.id===p.new.id)?prev:[...prev,dbToBooking(p.new)]);
       if(p.eventType==='UPDATE') setBookings(prev=>prev.map(b=>b.id===p.new.id?dbToBooking(p.new):b));
