@@ -787,15 +787,6 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
         activeTab={activeTab} setActiveTab={setActiveTab} onOpenSettings={()=>setShowSettings(true)} c={c} t={t}/>
 
       <div className="main-area" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
-        {/* Mobile top bar */}
-        <div style={{ display:'flex', alignItems:'center', padding:'10px 16px', borderBottom:`1px solid ${c.border}`, flexShrink:0, background:c.bg }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{ width:28, height:28, background:c.blue, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5"/><path d="M2 7h16" stroke="white" strokeWidth="1.5"/><path d="M7 3v4M13 3v4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            </div>
-            <span style={{ fontSize:15, fontWeight:700, color:c.text }}>DELOS</span>
-          </div>
-        </div>
 
         {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
         {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} c={c} t={t}/>}
