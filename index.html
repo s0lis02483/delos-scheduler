@@ -490,7 +490,6 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
       <div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
           <p style={{ fontSize:12, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.06em' }}>{t.upcoming}</p>
-          <button onClick={onGoCalendar} style={{ background:'none', border:'none', fontSize:12, color:c.blue, fontWeight:600, cursor:'pointer', padding:0 }}>{t.viewCal}</button>
         </div>
         {upcoming.length===0&&past.length===0&&(
           <div style={{ padding:'24px 0', textAlign:'center' }}>
