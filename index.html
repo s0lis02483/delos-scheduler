@@ -65,6 +65,7 @@ const T = {
     changePassword: 'Change Password', currentPassword: 'Current password', newPassword: 'New password', confirmPassword: 'Confirm new password',
     pwSaved: 'Password updated!', pwWrongCurrent: 'Current password is incorrect.', pwNoMatch: 'Passwords do not match.', pwTooShort: 'Min. 6 characters.',
     confirmDelete: 'Type username to confirm', deleteMember: 'Delete', memberDeleted: 'Member removed.',
+    displayName: 'Display Name', newDisplayName: 'New display name', displayNameSaved: 'Display name updated!', displayNameEmpty: 'Name cannot be empty.',
     todaySchedule: "Today's schedule",
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
     language: 'Language', signOut: 'Sign out',
@@ -93,6 +94,7 @@ const T = {
     changePassword: 'Spremeni geslo', currentPassword: 'Trenutno geslo', newPassword: 'Novo geslo', confirmPassword: 'Potrdi novo geslo',
     pwSaved: 'Geslo posodobljeno!', pwWrongCurrent: 'Trenutno geslo je napačno.', pwNoMatch: 'Gesli se ne ujemata.', pwTooShort: 'Min. 6 znakov.',
     confirmDelete: 'Vpiši uporabniško ime za potrditev', deleteMember: 'Izbriši', memberDeleted: 'Član odstranjen.',
+    displayName: 'Prikazno ime', newDisplayName: 'Novo prikazno ime', displayNameSaved: 'Prikazno ime posodobljeno!', displayNameEmpty: 'Ime ne sme biti prazno.',
     todaySchedule: 'Urnik za danes',
     settings: 'Nastavitve', appearance: 'Videz', darkMode: 'Temni način',
     language: 'Jezik', signOut: 'Odjava',
@@ -181,6 +183,24 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
   const [pwMsg, setPwMsg] = useState(null);
   const [showPwForm, setShowPwForm] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showNameForm, setShowNameForm] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [nameMsg, setNameMsg] = useState(null);
+
+  async function handleChangeName(e) {
+    e.preventDefault();
+    setNameMsg(null);
+    const n = nameInput.trim();
+    if (!n) { setNameMsg({ok:false, text:t.displayNameEmpty}); return; }
+    const initials = n.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    const {error} = await sb.from('app_users').update({name:n, initials}).eq('id', user.id);
+    if (error) { setNameMsg({ok:false, text:error.message}); return; }
+    user.name = n; user.initials = initials;
+    USERS = USERS.map(u => u.id===user.id ? {...u, name:n, initials} : u);
+    setUsers(prev => prev.map(u => u.id===user.id ? {...u, name:n, initials} : u));
+    setNameInput('');
+    setNameMsg({ok:true, text:t.displayNameSaved}); setTimeout(()=>setNameMsg(null), 3000);
+  }
 
   async function handleChangePassword(e) {
     e.preventDefault();
@@ -355,6 +375,32 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             )}
           </div>
         </>)}
+
+        {/* Display name */}
+        <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
+          <button onClick={()=>{setShowNameForm(p=>!p); setNameInput(''); setNameMsg(null);}}
+            style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>✏️</div>
+              <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.displayName}</span>
+            </div>
+            <svg style={{ transform:showNameForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          {showNameForm && (
+            <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
+              <div style={{ height:12 }}/>
+              <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder={user.name}
+                onKeyDown={e=>e.key==='Enter'&&handleChangeName(e)}
+                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+              {nameMsg && <p style={{ fontSize:13, fontWeight:600, color:nameMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{nameMsg.text}</p>}
+              <button onClick={handleChangeName}
+                style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                {t.displayName}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Change password */}
         <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
