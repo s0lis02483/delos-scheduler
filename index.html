@@ -48,9 +48,8 @@ function bookingToDb(b) { return { id:b.id, type:b.type, user_id:b.userId, date:
 const T = {
   en: {
     appSub: 'Team scheduler',
-    email: 'Email', password: 'Password', signIn: 'Sign in', signingIn: 'Signing in…',
-    quickLogin: 'Quick login (demo)', passwordHint: 'Password: delos2026',
-    wrongCredentials: 'Incorrect email or password.',
+    username: 'Username', password: 'Password', signIn: 'Sign in', signingIn: 'Signing in…',
+    wrongCredentials: 'Incorrect username or password.',
     today: 'Today', calendar: 'Calendar', week: 'Week', day: 'Day',
     goodMorning: 'Good morning', goodAfternoon: 'Good afternoon', goodEvening: 'Good evening',
     upcoming: 'Upcoming today', viewCal: 'View calendar →',
@@ -73,9 +72,8 @@ const T = {
   },
   sl: {
     appSub: 'Timski razporejevalnik',
-    email: 'E-pošta', password: 'Geslo', signIn: 'Prijava', signingIn: 'Prijavljanje…',
-    quickLogin: 'Hitra prijava (demo)', passwordHint: 'Geslo: delos2026',
-    wrongCredentials: 'Napačna e-pošta ali geslo.',
+    username: 'Uporabniško ime', password: 'Geslo', signIn: 'Prijava', signingIn: 'Prijavljanje…',
+    wrongCredentials: 'Napačno uporabniško ime ali geslo.',
     today: 'Danes', calendar: 'Koledar', week: 'Teden', day: 'Dan',
     goodMorning: 'Dobro jutro', goodAfternoon: 'Dober dan', goodEvening: 'Dober večer',
     upcoming: 'Danes na sporedu', viewCal: 'Odpri koledar →',
@@ -130,11 +128,7 @@ function mkTheme(dark, primaryColor, appointmentColor) {
 const TWEAK_DEFAULTS = { primaryColor:'#0E76BC', appointmentColor:'#1A9B5C', slotDuration:60, startHour:7, endHour:20 };
 
 const USERS = [
-  { id:'alice', name:'Alice M.', initials:'AM', email:'alice@delos.co' },
-  { id:'bob',   name:'Bob K.',   initials:'BK', email:'bob@delos.co'   },
-  { id:'carol', name:'Carol S.', initials:'CS', email:'carol@delos.co' },
-  { id:'david', name:'David L.', initials:'DL', email:'david@delos.co' },
-  { id:'emma',  name:'Emma R.',  initials:'ER', email:'emma@delos.co'  },
+  { id:'sabina', name:'Sabina Ivankovic', initials:'SI', username:'sabina.ivankovic', password:'gasper123' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -245,15 +239,15 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
 function LoginScreen({ onLogin, c, t }) {
-  const [email, setEmail] = useState('');
-  const [pw, setPw]       = useState('');
-  const [err, setErr]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState('');
+  const [pw, setPw]             = useState('');
+  const [err, setErr]           = useState('');
+  const [loading, setLoading]   = useState(false);
 
   function handleSubmit(e) {
     e.preventDefault(); setErr('');
-    const user = USERS.find(u => u.email===email.trim().toLowerCase());
-    if (!user || pw!=='delos2026') { setErr(t.wrongCredentials); return; }
+    const user = USERS.find(u => u.username===username.trim().toLowerCase());
+    if (!user || pw!==user.password) { setErr(t.wrongCredentials); return; }
     setLoading(true); setTimeout(() => onLogin(user), 600);
   }
 
@@ -271,10 +265,10 @@ function LoginScreen({ onLogin, c, t }) {
         </div>
         <div style={{ background:c.bg, borderRadius:16, padding:'28px 24px', boxShadow:c.shadow }}>
           <form onSubmit={handleSubmit}>
-            <label style={{ display:'block', fontSize:12, fontWeight:600, color:c.textSub, marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>{t.email}</label>
-            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@delos.co"
+            <label style={{ display:'block', fontSize:12, fontWeight:600, color:c.textSub, marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>{t.username}</label>
+            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} placeholder="sabina.ivankovic"
               style={{ width:'100%', padding:'12px 14px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:15, marginBottom:16, background:c.bg, color:c.text }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="email"/>
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="username"/>
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:c.textSub, marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>{t.password}</label>
             <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••"
               style={{ width:'100%', padding:'12px 14px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:15, marginBottom:20, background:c.bg, color:c.text }}
@@ -284,18 +278,6 @@ function LoginScreen({ onLogin, c, t }) {
               {loading ? t.signingIn : t.signIn}
             </button>
           </form>
-          <div style={{ marginTop:20, paddingTop:20, borderTop:`1px solid ${c.border}` }}>
-            <p style={{ fontSize:11, color:c.textMuted, textAlign:'center', marginBottom:12, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t.quickLogin}</p>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
-              {USERS.map(u => (
-                <button key={u.id} onClick={() => { setEmail(u.email); setPw('delos2026'); }}
-                  style={{ padding:'6px 12px', background:c.bgMid, borderRadius:20, fontSize:12, fontWeight:500, color:c.textSub, cursor:'pointer' }}>
-                  {u.name}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize:11, color:c.textFaint, textAlign:'center', marginTop:10 }}>{t.passwordHint}</p>
-          </div>
         </div>
       </div>
     </div>
