@@ -273,7 +273,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
 
         {/* User card */}
         <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px', background:c.bgSoft, borderRadius:16 }}>
-          <div style={{ width:48, height:48, borderRadius:'50%', background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:c.blue, flexShrink:0 }}>
+          <div style={{ width:48, height:48, borderRadius:'50%', background:c.bgDeep, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:c.textSub, flexShrink:0 }}>
             {user.initials}
           </div>
           <div>
@@ -288,8 +288,8 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
               <div style={{ width:32, height:32, borderRadius:9, background:dark?'#2C2C2E':'#E5E5EA', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {dark
-                  ? <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M12.5 9.5A5.5 5.5 0 015.5 2.5a5.5 5.5 0 100 10 5.5 5.5 0 007-3z" stroke={c.textSub} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  : <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="3" stroke={c.textSub} strokeWidth="1.4"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.2 3.2l1 1M10.8 10.8l1 1M10.8 3.2l-1 1M3.2 10.8l1-1" stroke={c.textSub} strokeWidth="1.4" strokeLinecap="round"/></svg>
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                 }
               </div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.darkMode}</span>
