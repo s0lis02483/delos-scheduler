@@ -61,6 +61,7 @@ const T = {
     alreadyBooked: 'You already have a booking here',
     carLegend: 'Car booking', apptLegend: 'Appointment',
     everyone: 'Everyone',
+    team: 'Team', addEmployee: 'Add Employee', fullName: 'Full name', addMember: 'Add', memberAdded: 'Member added!', admin: 'Admin',
     todaySchedule: "Today's schedule",
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
     language: 'Language', signOut: 'Sign out',
@@ -85,6 +86,7 @@ const T = {
     alreadyBooked: 'Tukaj že imate rezervacijo',
     carLegend: 'Rezervacija vozila', apptLegend: 'Sestanek',
     everyone: 'Vsi',
+    team: 'Ekipa', addEmployee: 'Dodaj zaposlenega', fullName: 'Polno ime', addMember: 'Dodaj', memberAdded: 'Član dodan!', admin: 'Admin',
     todaySchedule: 'Urnik za danes',
     settings: 'Nastavitve', appearance: 'Videz', darkMode: 'Temni način',
     language: 'Jezik', signOut: 'Odjava',
@@ -127,9 +129,7 @@ function mkTheme(dark, primaryColor, appointmentColor) {
 
 const TWEAK_DEFAULTS = { primaryColor:'#0E76BC', appointmentColor:'#1A9B5C', slotDuration:60, startHour:7, endHour:20 };
 
-const USERS = [
-  { id:'sabina', name:'Sabina Ivankovic', initials:'SI', username:'sabina.ivankovic', password:'gasper123' },
-];
+let USERS = [{ id:'sabina', name:'Sabina Ivankovic', initials:'SI', username:'sabina.ivankovic', is_admin:true }];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -161,7 +161,31 @@ function greet(t) {
 
 // ─── Settings Sheet ───────────────────────────────────────────────────────────
 
-function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, onBack, c, t }) {
+function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, onBack, users, setUsers, c, t }) {
+  const [newName, setNewName] = useState('');
+  const [newUser, setNewUser] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [addMsg, setAddMsg] = useState('');
+
+  async function handleAddEmployee(e) {
+    e.preventDefault();
+    const name = newName.trim(), username = newUser.trim().toLowerCase(), password = newPass.trim();
+    if (!name || !username || !password) return;
+    setAdding(true);
+    const id = 'u' + Date.now();
+    const initials = name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    const { error } = await sb.from('app_users').insert({ id, name, username, password, initials, is_admin: false });
+    setAdding(false);
+    if (!error) {
+      const newEntry = { id, name, username, password, initials, is_admin: false };
+      USERS = [...USERS, newEntry];
+      setUsers(prev => [...prev, newEntry]);
+      setNewName(''); setNewUser(''); setNewPass('');
+      setAddMsg(t.memberAdded); setTimeout(() => setAddMsg(''), 2500);
+    }
+  }
+
   return (
     <div style={{ position:'fixed', inset:0, background:c.bg, zIndex:200, display:'flex', flexDirection:'column', animation:'slideIn 0.22s ease' }}>
       <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
@@ -183,7 +207,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           </div>
           <div>
             <div style={{ fontSize:16, fontWeight:700, color:c.text }}>{user.name}</div>
-            <div style={{ fontSize:13, color:c.textMuted, marginTop:2 }}>{user.email}</div>
+            <div style={{ fontSize:13, color:c.textMuted, marginTop:2 }}>{user.username}{user.is_admin ? ` · ${t.admin}` : ''}</div>
           </div>
         </div>
 
@@ -222,6 +246,43 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           ))}
         </div>
 
+        {/* Admin: Team management */}
+        {user.is_admin && (<>
+          <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.team}</p>
+          <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
+            {users.filter(u=>u.id!==user.id).length===0 && (
+              <p style={{ fontSize:13, color:c.textMuted, padding:'14px 16px' }}>—</p>
+            )}
+            {users.filter(u=>u.id!==user.id).map((u,i,arr)=>(
+              <div key={u.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:i<arr.length-1?`1px solid ${c.border}`:'none' }}>
+                <div style={{ width:34, height:34, borderRadius:'50%', background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:c.blue, flexShrink:0 }}>{u.initials}</div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:600, color:c.text }}>{u.name}</div>
+                  <div style={{ fontSize:12, color:c.textMuted }}>{u.username}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.addEmployee}</p>
+          <div style={{ background:c.bgSoft, borderRadius:16, padding:'16px', display:'flex', flexDirection:'column', gap:10 }}>
+            <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t.fullName}
+              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+            <input value={newUser} onChange={e=>setNewUser(e.target.value)} placeholder="username"
+              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+            <input value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder={t.password} type="password"
+              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+            {addMsg && <p style={{ fontSize:13, color:c.green, fontWeight:600, textAlign:'center' }}>{addMsg}</p>}
+            <button onClick={handleAddEmployee} disabled={adding}
+              style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', opacity:adding?0.7:1 }}>
+              {adding ? '…' : t.addMember}
+            </button>
+          </div>
+        </>)}
+
         {/* Sign out */}
         <div style={{ marginTop:16 }}>
           <button onClick={onLogout}
@@ -238,7 +299,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
-function LoginScreen({ onLogin, c, t }) {
+function LoginScreen({ onLogin, users, c, t }) {
   const [username, setUsername] = useState('');
   const [pw, setPw]             = useState('');
   const [err, setErr]           = useState('');
@@ -246,7 +307,7 @@ function LoginScreen({ onLogin, c, t }) {
 
   function handleSubmit(e) {
     e.preventDefault(); setErr('');
-    const user = USERS.find(u => u.username===username.trim().toLowerCase());
+    const user = users.find(u => u.username===username.trim().toLowerCase());
     if (!user || pw!==user.password) { setErr(t.wrongCredentials); return; }
     setLoading(true); setTimeout(() => onLogin(user), 600);
   }
@@ -476,7 +537,7 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
 
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
 
-function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user, tweaks, today, c, t }) {
+function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user, tweaks, today, users, c, t }) {
   const startH=tweaks.startHour||7, endH=tweaks.endHour||20, slotH=52, timeW=52;
   const days=view==='week'?Array.from({length:7},(_,i)=>addDays(weekStart,i)):[focusDate];
   const hours=[]; for(let h=startH;h<=endH;h++) hours.push(h);
@@ -529,7 +590,7 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user,
                 })}
                 {dayBkgs.map(b=>{
                   const top=minutesToY(b.start), height=((b.end-b.start)/30)*slotH-3;
-                  const owner=USERS.find(u=>u.id===b.userId), isCar=b.type==='car';
+                  const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car';
                   const bg=isCar?c.blue:c.green;
                   return (
                     <div key={b.id} style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:8, padding:'5px 8px', zIndex:2, overflow:'hidden', cursor:'default', boxSizing:'border-box' }}>
@@ -558,7 +619,7 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user,
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
 
-function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, c, t }) {
+function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, users, c, t }) {
   const [view, setView]=useState('week');
   const [weekStart, setWeekStart]=useState(startOfWeek(today));
   const [focusDay, setFocusDay]=useState(today);
@@ -598,14 +659,14 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
             style={{ height:32, padding:'0 10px', borderRadius:8, border:`1.5px solid ${filterUser==='all'?c.border:c.blue}`, background:filterUser==='all'?c.bgMid:c.blueBg, color:filterUser==='all'?c.textSub:c.blue, fontSize:12, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
             {filterUser==='all'
               ? <><span style={{fontSize:14}}>👥</span> {t.everyone}</>
-              : <><span style={{ width:20, height:20, borderRadius:'50%', background:c.blue, color:'#fff', fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{USERS.find(u=>u.id===filterUser)?.initials}</span> {USERS.find(u=>u.id===filterUser)?.name.split(' ')[0]}</>
+              : <><span style={{ width:20, height:20, borderRadius:'50%', background:c.blue, color:'#fff', fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{users.find(u=>u.id===filterUser)?.initials}</span> {users.find(u=>u.id===filterUser)?.name.split(' ')[0]}</>
             }
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           {showPicker&&<div onClick={()=>setShowPicker(false)} style={{ position:'fixed', inset:0, zIndex:49 }}/>}
           {showPicker&&(
             <div style={{ position:'absolute', top:36, left:0, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:12, padding:6, zIndex:50, minWidth:160, boxShadow:c.shadow }}>
-              {[{id:'all',name:t.everyone,initials:'👥'},...USERS].map(u=>(
+              {[{id:'all',name:t.everyone,initials:'👥'},...users].map(u=>(
                 <button key={u.id} onClick={()=>{setFilterUser(u.id);setShowPicker(false);}}
                   style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 10px', borderRadius:8, border:'none', background:filterUser===u.id?c.blueBg:'transparent', color:filterUser===u.id?c.blue:c.text, fontWeight:filterUser===u.id?600:400, fontSize:13, cursor:'pointer', textAlign:'left' }}>
                   {u.id==='all'
@@ -630,7 +691,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       </div>
 
       <CalendarGrid view={view} weekStart={weekStart} focusDate={focusDay} bookings={filteredBookings}
-        onSlotClick={setSlot} user={user} tweaks={tweaks} today={today} c={c} t={t}/>
+        onSlotClick={setSlot} user={user} tweaks={tweaks} today={today} users={users} c={c} t={t}/>
 
       <div style={{ display:'flex', gap:16, padding:'7px 16px', borderTop:`1px solid ${c.border}`, flexShrink:0, justifyContent:'center', background:c.bg }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.blue }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.carLegend}</span></div>
@@ -699,7 +760,7 @@ function Sidebar({ user, bookings, tweaks, today, activeTab, setActiveTab, onOpe
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
-function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark, onToggleLang }) {
+function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark, onToggleLang, users, setUsers }) {
   const today=useMemo(()=>getToday(),[]);
   const [activeTab, setActiveTab]=useState('today');
   const [bookings, setBookings]=useState([]);
@@ -741,7 +802,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
         </div>
 
         {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
-        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} c={c} t={t}/>}
+        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} c={c} t={t}/>}
       </div>
 
       {/* Mobile tab bar */}
@@ -762,7 +823,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
     {showSettings&&(
       <SettingsPage user={user} dark={dark} lang={lang}
         onToggleDark={onToggleDark} onToggleLang={onToggleLang}
-        onLogout={onLogout} onBack={()=>setShowSettings(false)} c={c} t={t}/>
+        onLogout={onLogout} onBack={()=>setShowSettings(false)} users={users} setUsers={setUsers} c={c} t={t}/>
     )}
 
     {showTweaks&&<TweaksPanel tweaks={tweaks} c={c} t={t}/>}
@@ -793,6 +854,7 @@ function TweaksPanel({ tweaks, c, t }) {
 
 function App() {
   const [user, setUser]=useState(null);
+  const [users, setUsers]=useState(USERS);
   const [tweaks, setTweaks]=useState(TWEAK_DEFAULTS);
   const [showTweaks, setShowTweaks]=useState(false);
   const [dark, setDark]=useState(()=>localStorage.getItem('delos_dark')==='1');
@@ -808,8 +870,21 @@ function App() {
       if (e.data?.type==='__edit_mode_set_keys')   setTweaks(p=>({...p,...e.data.edits}));
     });
     window.parent.postMessage({type:'__edit_mode_available'},'*');
-    const saved=localStorage.getItem('delos_user');
-    if (saved) { const u=USERS.find(x=>x.id===saved); if(u) setUser(u); }
+
+    sb.from('app_users').select('*').order('created_at').then(({data})=>{
+      if(data&&data.length>0){ USERS=data; setUsers(data);
+        const saved=localStorage.getItem('delos_user');
+        if(saved){ const u=data.find(x=>x.id===saved); if(u) setUser(u); }
+      } else {
+        const saved=localStorage.getItem('delos_user');
+        if(saved){ const u=USERS.find(x=>x.id===saved); if(u) setUser(u); }
+      }
+    });
+
+    const ch=sb.channel('app-users-watch').on('postgres_changes',{event:'INSERT',schema:'public',table:'app_users'},(p)=>{
+      USERS=[...USERS,p.new]; setUsers(prev=>[...prev,p.new]);
+    }).subscribe();
+    return ()=>sb.removeChannel(ch);
   },[]);
 
   function handleLogin(u)  { setUser(u); localStorage.setItem('delos_user',u.id); }
@@ -818,8 +893,8 @@ function App() {
   const t=T[lang]||T.en;
   const c=useMemo(()=>mkTheme(dark, tweaks.primaryColor, tweaks.appointmentColor),[dark, tweaks.primaryColor, tweaks.appointmentColor]);
 
-  if (!user) return <LoginScreen onLogin={handleLogin} c={c} t={t}/>;
-  return <MainApp user={user} onLogout={handleLogout} tweaks={tweaks} showTweaks={showTweaks} dark={dark} lang={lang} onToggleDark={toggleDark} onToggleLang={toggleLang}/>;
+  if (!user) return <LoginScreen onLogin={handleLogin} users={users} c={c} t={t}/>;
+  return <MainApp user={user} onLogout={handleLogout} tweaks={tweaks} showTweaks={showTweaks} dark={dark} lang={lang} onToggleDark={toggleDark} onToggleLang={toggleLang} users={users} setUsers={setUsers}/>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
