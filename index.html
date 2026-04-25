@@ -286,7 +286,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
         <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:dark?'#2C2C2E':'#E5E5EA', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {dark
                   ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -308,7 +308,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
               onMouseEnter={e=>e.currentTarget.style.background=c.bgMid}
               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{flag}</div>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{flag}</div>
                 <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{label}</span>
               </div>
               {lang===code && (
@@ -364,7 +364,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             <button onClick={()=>{setShowAddForm(p=>!p); setNewName(''); setNewUser(''); setNewPass(''); setAddMsg('');}}
               style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={c.textSub} strokeWidth="1.8" strokeLinecap="round"/></svg></div>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={c.blue} strokeWidth="1.8" strokeLinecap="round"/></svg></div>
                 <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.addEmployee}</span>
               </div>
               <svg style={{ transform:showAddForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -396,7 +396,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           <button onClick={()=>{setShowNameForm(p=>!p); setNameInput(''); setNameMsg(null);}}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10.5 2.5l2 2-8 8H2.5v-2l8-8z" stroke={c.textSub} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10.5 2.5l2 2-8 8H2.5v-2l8-8z" stroke={c.blue} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.displayName}</span>
             </div>
             <svg style={{ transform:showNameForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -421,7 +421,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           <button onClick={()=>{setShowPwForm(p=>!p); setPwMsg(null); setCurPw(''); setNewPw(''); setConPw('');}}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6" cy="6" r="3.5" stroke={c.textSub} strokeWidth="1.5"/><path d="M8.5 8.5l4 4" stroke={c.textSub} strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6" cy="6" r="3.5" stroke={c.blue} strokeWidth="1.5"/><path d="M8.5 8.5l4 4" stroke={c.blue} strokeWidth="1.5" strokeLinecap="round"/></svg></div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.changePassword}</span>
             </div>
             <svg style={{ transform:showPwForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
