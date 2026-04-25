@@ -361,7 +361,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             <button onClick={()=>{setShowAddForm(p=>!p); setNewName(''); setNewUser(''); setNewPass(''); setAddMsg('');}}
               style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>➕</div>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={c.textSub} strokeWidth="1.8" strokeLinecap="round"/></svg></div>
                 <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.addEmployee}</span>
               </div>
               <svg style={{ transform:showAddForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -393,7 +393,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           <button onClick={()=>{setShowNameForm(p=>!p); setNameInput(''); setNameMsg(null);}}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>✏️</div>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10.5 2.5l2 2-8 8H2.5v-2l8-8z" stroke={c.textSub} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.displayName}</span>
             </div>
             <svg style={{ transform:showNameForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -418,7 +418,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           <button onClick={()=>{setShowPwForm(p=>!p); setPwMsg(null); setCurPw(''); setNewPw(''); setConPw('');}}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🔑</div>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6" cy="6" r="3.5" stroke={c.textSub} strokeWidth="1.5"/><path d="M8.5 8.5l4 4" stroke={c.textSub} strokeWidth="1.5" strokeLinecap="round"/></svg></div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.changePassword}</span>
             </div>
             <svg style={{ transform:showPwForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
