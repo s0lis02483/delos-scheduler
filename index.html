@@ -1000,7 +1000,7 @@ function App() {
   const [tweaks, setTweaks]=useState(TWEAK_DEFAULTS);
   const [showTweaks, setShowTweaks]=useState(false);
   const [dark, setDark]=useState(()=>localStorage.getItem('delos_dark')==='1');
-  const [lang, setLang]=useState(()=>localStorage.getItem('delos_lang')||'en');
+  const [lang, setLang]=useState(()=>localStorage.getItem('delos_lang')||'sl');
 
   function toggleDark() { setDark(d=>{ const n=!d; localStorage.setItem('delos_dark',n?'1':'0'); return n; }); }
   function toggleLang(code) { setLang(code); localStorage.setItem('delos_lang',code); }
