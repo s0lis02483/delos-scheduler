@@ -584,13 +584,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0, background:c.bg }}>
       <div style={{ display:'flex', alignItems:'center', padding:'8px 12px', borderBottom:`1px solid ${c.border}`, flexShrink:0, gap:4, background:c.bg }}>
-        <button onClick={()=>{ if(view==='week') setWeekStart(w=>addDays(w,-7)); else {const d=addDays(focusDay,-1);setFocusDay(d);setWeekStart(startOfWeek(d));} }}
-          style={{ width:32, height:32, background:'none', border:'none', borderRadius:8, color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>‹</button>
-        <button onClick={()=>{ setWeekStart(startOfWeek(today)); setFocusDay(today); }}
-          style={{ fontSize:14, fontWeight:600, color:c.text, background:'none', border:'none', cursor:'pointer', flex:1, textAlign:'center' }}>{navLabel}</button>
-        <button onClick={()=>{ if(view==='week') setWeekStart(w=>addDays(w,7)); else {const d=addDays(focusDay,1);setFocusDay(d);setWeekStart(startOfWeek(d));} }}
-          style={{ width:32, height:32, background:'none', border:'none', borderRadius:8, color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>›</button>
-        <div style={{ display:'flex', background:c.bgMid, borderRadius:8, padding:3, gap:2, marginLeft:4 }}>
+        <div style={{ display:'flex', background:c.bgMid, borderRadius:8, padding:3, gap:2 }}>
           {['week','day'].map(v=>(
             <button key={v} onClick={()=>setView(v)}
               style={{ padding:'5px 10px', borderRadius:6, border:'none', background:view===v?c.bg:'transparent', color:view===v?c.text:c.textMuted, fontWeight:600, fontSize:11, cursor:'pointer', boxShadow:view===v?`0 1px 4px rgba(0,0,0,${c.isDark?0.4:0.1})`:'none', transition:'all 0.15s', textTransform:'capitalize' }}>
@@ -609,7 +603,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
           </button>
           {showPicker&&<div onClick={()=>setShowPicker(false)} style={{ position:'fixed', inset:0, zIndex:49 }}/>}
           {showPicker&&(
-            <div style={{ position:'absolute', top:36, right:0, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:12, padding:6, zIndex:50, minWidth:160, boxShadow:c.shadow }}>
+            <div style={{ position:'absolute', top:36, left:0, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:12, padding:6, zIndex:50, minWidth:160, boxShadow:c.shadow }}>
               {[{id:'all',name:t.everyone,initials:'👥'},...USERS].map(u=>(
                 <button key={u.id} onClick={()=>{setFilterUser(u.id);setShowPicker(false);}}
                   style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 10px', borderRadius:8, border:'none', background:filterUser===u.id?c.blueBg:'transparent', color:filterUser===u.id?c.blue:c.text, fontWeight:filterUser===u.id?600:400, fontSize:13, cursor:'pointer', textAlign:'left' }}>
@@ -623,6 +617,14 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
               ))}
             </div>
           )}
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:4, marginLeft:'auto' }}>
+          <button onClick={()=>{ if(view==='week') setWeekStart(w=>addDays(w,-7)); else {const d=addDays(focusDay,-1);setFocusDay(d);setWeekStart(startOfWeek(d));} }}
+            style={{ width:32, height:32, background:'none', border:'none', borderRadius:8, color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>‹</button>
+          <button onClick={()=>{ setWeekStart(startOfWeek(today)); setFocusDay(today); }}
+            style={{ fontSize:14, fontWeight:600, color:c.text, background:'none', border:'none', cursor:'pointer', whiteSpace:'nowrap' }}>{navLabel}</button>
+          <button onClick={()=>{ if(view==='week') setWeekStart(w=>addDays(w,7)); else {const d=addDays(focusDay,1);setFocusDay(d);setWeekStart(startOfWeek(d));} }}
+            style={{ width:32, height:32, background:'none', border:'none', borderRadius:8, color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>›</button>
         </div>
       </div>
 
