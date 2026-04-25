@@ -276,15 +276,17 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
                       <div style={{ fontSize:14, fontWeight:600, color:c.text }}>{u.name}</div>
                       <div style={{ fontSize:12, color:c.textMuted }}>{u.username}</div>
                     </div>
-                    <button onClick={()=>{ setDeletingId(isDeleting?null:u.id); setDeleteInput(''); }}
-                      style={{ width:32, height:32, borderRadius:8, background:isDeleting?'#FF3B3018':'transparent', border:'none', color:'#FF3B30', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4" stroke="#FF3B30" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
+                    {!isDeleting && (
+                      <button onClick={()=>{ setDeletingId(u.id); setDeleteInput(''); }}
+                        style={{ width:32, height:32, borderRadius:8, background:'transparent', border:'none', color:'#FF3B30', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4" stroke="#FF3B30" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    )}
                   </div>
                   {isDeleting && (
                     <div style={{ padding:'0 16px 14px', display:'flex', flexDirection:'column', gap:8 }}>
                       <p style={{ fontSize:12, color:c.textMuted }}>{t.confirmDelete}: <strong style={{color:c.text}}>{u.username}</strong></p>
-                      <input value={deleteInput} onChange={e=>setDeleteInput(e.target.value)} placeholder={u.username}
+                      <input value={deleteInput} onChange={e=>setDeleteInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&confirmMatch&&handleDeleteMember(u)} placeholder={u.username}
                         style={{ padding:'9px 12px', border:`1.5px solid ${confirmMatch?'#FF3B30':c.borderInput}`, borderRadius:10, fontSize:13, color:c.text, background:c.bg }}/>
                       <div style={{ display:'flex', gap:8 }}>
                         <button onClick={()=>{setDeletingId(null);setDeleteInput('');}}
