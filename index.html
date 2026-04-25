@@ -62,6 +62,8 @@ const T = {
     carLegend: 'Car booking', apptLegend: 'Appointment',
     everyone: 'Everyone',
     team: 'Team', addEmployee: 'Add Employee', fullName: 'Full name', addMember: 'Add', memberAdded: 'Member added!', admin: 'Admin',
+    changePassword: 'Change Password', currentPassword: 'Current password', newPassword: 'New password', confirmPassword: 'Confirm new password',
+    pwSaved: 'Password updated!', pwWrongCurrent: 'Current password is incorrect.', pwNoMatch: 'Passwords do not match.', pwTooShort: 'Min. 6 characters.',
     confirmDelete: 'Type username to confirm', deleteMember: 'Delete', memberDeleted: 'Member removed.',
     todaySchedule: "Today's schedule",
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
@@ -88,6 +90,8 @@ const T = {
     carLegend: 'Rezervacija vozila', apptLegend: 'Sestanek',
     everyone: 'Vsi',
     team: 'Ekipa', addEmployee: 'Dodaj zaposlenega', fullName: 'Polno ime', addMember: 'Dodaj', memberAdded: 'Član dodan!', admin: 'Admin',
+    changePassword: 'Spremeni geslo', currentPassword: 'Trenutno geslo', newPassword: 'Novo geslo', confirmPassword: 'Potrdi novo geslo',
+    pwSaved: 'Geslo posodobljeno!', pwWrongCurrent: 'Trenutno geslo je napačno.', pwNoMatch: 'Gesli se ne ujemata.', pwTooShort: 'Min. 6 znakov.',
     confirmDelete: 'Vpiši uporabniško ime za potrditev', deleteMember: 'Izbriši', memberDeleted: 'Član odstranjen.',
     todaySchedule: 'Urnik za danes',
     settings: 'Nastavitve', appearance: 'Videz', darkMode: 'Temni način',
@@ -171,6 +175,23 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
   const [addMsg, setAddMsg] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [deleteInput, setDeleteInput] = useState('');
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [conPw, setConPw] = useState('');
+  const [pwMsg, setPwMsg] = useState(null);
+
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    setPwMsg(null);
+    if (curPw !== user.password) { setPwMsg({ok:false, text:t.pwWrongCurrent}); return; }
+    if (newPw.length < 6)        { setPwMsg({ok:false, text:t.pwTooShort});     return; }
+    if (newPw !== conPw)         { setPwMsg({ok:false, text:t.pwNoMatch});       return; }
+    const {error} = await sb.from('app_users').update({password: newPw}).eq('id', user.id);
+    if (error) { setPwMsg({ok:false, text:error.message}); return; }
+    user.password = newPw;
+    setCurPw(''); setNewPw(''); setConPw('');
+    setPwMsg({ok:true, text:t.pwSaved}); setTimeout(()=>setPwMsg(null), 3000);
+  }
 
   async function handleDeleteMember(u) {
     await sb.from('app_users').delete().eq('id', u.id);
@@ -319,6 +340,25 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             </button>
           </div>
         </>)}
+
+        {/* Change password */}
+        <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.changePassword}</p>
+        <div style={{ background:c.bgSoft, borderRadius:16, padding:'16px', display:'flex', flexDirection:'column', gap:10 }}>
+          <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder={t.currentPassword}
+            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+          <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t.newPassword}
+            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+          <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword}
+            style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+            onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+          {pwMsg && <p style={{ fontSize:13, fontWeight:600, color:pwMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{pwMsg.text}</p>}
+          <button onClick={handleChangePassword}
+            style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+            {t.changePassword}
+          </button>
+        </div>
 
         {/* Sign out */}
         <div style={{ marginTop:16 }}>
