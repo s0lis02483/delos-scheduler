@@ -17,6 +17,15 @@
     button { font-family: inherit; cursor: pointer; border: none; }
     button:active { transform: scale(0.97); }
     ::-webkit-scrollbar { width: 0; height: 0; }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+      transition: background-color 9999s ease-in-out 0s;
+      -webkit-text-fill-color: inherit !important;
+      caret-color: inherit;
+    }
     .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 50; backdrop-filter: blur(2px); }
     .sheet-handle { width: 36px; height: 4px; border-radius: 2px; margin: 12px auto 0; }
     .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 8px 4px; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; transition: color 0.15s; }
@@ -243,7 +252,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
 
   return (
     <div style={{ position:'fixed', inset:0, background:c.bg, zIndex:200, display:'flex', flexDirection:'column', animation:'slideIn 0.22s ease' }}>
-      <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
+      <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } } @keyframes expandDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }`}</style>
 
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderBottom:`1px solid ${c.border}`, flexShrink:0 }}>
@@ -256,7 +265,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
       <div style={{ flex:1, overflowY:'auto', padding:'20px 16px', display:'flex', flexDirection:'column', gap:8 }}>
 
         {/* User card */}
-        <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px', background:c.bgSoft, borderRadius:16, marginBottom:8 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px', background:c.bgSoft, borderRadius:16 }}>
           <div style={{ width:48, height:48, borderRadius:'50%', background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:c.blue, flexShrink:0 }}>
             {user.initials}
           </div>
@@ -267,7 +276,6 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
         </div>
 
         {/* Appearance section */}
-        <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:8, marginBottom:4, paddingLeft:4 }}>{t.appearance}</p>
         <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -283,7 +291,6 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
         </div>
 
         {/* Language section */}
-        <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.language}</p>
         <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
           {[['en','English','🇬🇧'],['sl','Slovenščina','🇸🇮']].map(([code,label,flag], i, arr) => (
             <div key={code} onClick={() => onToggleLang(code)}
@@ -303,7 +310,6 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
 
         {/* Admin: Team management */}
         {user.is_admin && (<>
-          <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.team}</p>
           <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
             {users.filter(u=>u.id!==user.id).length===0 && (
               <p style={{ fontSize:13, color:c.textMuted, padding:'14px 16px' }}>—</p>
@@ -344,7 +350,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             })}
           </div>
 
-          <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden', marginTop:8 }}>
+          <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden' }}>
             <button onClick={()=>{setShowAddForm(p=>!p); setNewName(''); setNewUser(''); setNewPass(''); setAddMsg('');}}
               style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -354,21 +360,20 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
               <svg style={{ transform:showAddForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             {showAddForm && (
-              <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
-                <div style={{ height:12 }}/>
-                <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t.fullName}
-                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+              <div style={{ padding:'12px 16px 16px', display:'flex', flexDirection:'column', gap:8, borderTop:`1px solid ${c.border}`, animation:'expandDown 0.18s ease' }}>
+                <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t.fullName} autoComplete="off"
+                  style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                   onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-                <input value={newUser} onChange={e=>setNewUser(e.target.value)} placeholder="username"
-                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                <input value={newUser} onChange={e=>setNewUser(e.target.value)} placeholder="username" autoComplete="off"
+                  style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                   onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-                <input value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder={t.password} type="password"
+                <input value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder={t.password} type="password" autoComplete="new-password"
                   onKeyDown={e=>e.key==='Enter'&&handleAddEmployee(e)}
-                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                  style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                   onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
                 {addMsg && <p style={{ fontSize:13, color:c.green, fontWeight:600, textAlign:'center' }}>{addMsg}</p>}
                 <button onClick={handleAddEmployee} disabled={adding}
-                  style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', opacity:adding?0.7:1 }}>
+                  style={{ padding:'10px', background:c.blue, color:'#fff', borderRadius:9, fontSize:13, fontWeight:600, cursor:'pointer', opacity:adding?0.7:1, marginTop:2 }}>
                   {adding ? '…' : t.addMember}
                 </button>
               </div>
@@ -387,11 +392,10 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             <svg style={{ transform:showNameForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           {showNameForm && (
-            <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
-              <div style={{ height:12 }}/>
+            <div style={{ padding:'0 16px 16px', paddingTop:14, display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}`, animation:'expandDown 0.18s ease' }}>
               <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder={user.name}
                 onKeyDown={e=>e.key==='Enter'&&handleChangeName(e)}
-                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bgMid }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
               {nameMsg && <p style={{ fontSize:13, fontWeight:600, color:nameMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{nameMsg.text}</p>}
               <button onClick={handleChangeName}
@@ -412,22 +416,21 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             </div>
             <svg style={{ transform:showPwForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
-          {showPwForm && (
-            <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
-              <div style={{ height:12 }}/>
-              <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder={t.currentPassword}
-                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+        {showPwForm && (
+            <div style={{ padding:'12px 16px 16px', display:'flex', flexDirection:'column', gap:8, borderTop:`1px solid ${c.border}`, animation:'expandDown 0.18s ease' }}>
+              <input type="password" value={curPw} onChange={e=>setCurPw(e.target.value)} placeholder={t.currentPassword} autoComplete="current-password"
+                style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-              <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t.newPassword}
-                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+              <input type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder={t.newPassword} autoComplete="new-password"
+                style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-              <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword}
+              <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword} autoComplete="new-password"
                 onKeyDown={e=>e.key==='Enter'&&handleChangePassword(e)}
-                style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                style={{ padding:'9px 12px', border:`1.5px solid ${c.borderInput}`, borderRadius:9, fontSize:13, color:c.text, background:c.bgMid }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
               {pwMsg && <p style={{ fontSize:13, fontWeight:600, color:pwMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{pwMsg.text}</p>}
               <button onClick={handleChangePassword}
-                style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                style={{ padding:'10px', background:c.blue, color:'#fff', borderRadius:9, fontSize:13, fontWeight:600, cursor:'pointer', marginTop:2 }}>
                 {t.changePassword}
               </button>
             </div>
