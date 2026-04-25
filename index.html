@@ -180,6 +180,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
   const [conPw, setConPw] = useState('');
   const [pwMsg, setPwMsg] = useState(null);
   const [showPwForm, setShowPwForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   async function handleChangePassword(e) {
     e.preventDefault();
@@ -323,22 +324,35 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
             })}
           </div>
 
-          <p style={{ fontSize:11, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.07em', marginTop:12, marginBottom:4, paddingLeft:4 }}>{t.addEmployee}</p>
-          <div style={{ background:c.bgSoft, borderRadius:16, padding:'16px', display:'flex', flexDirection:'column', gap:10 }}>
-            <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t.fullName}
-              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-            <input value={newUser} onChange={e=>setNewUser(e.target.value)} placeholder="username"
-              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-            <input value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder={t.password} type="password"
-              style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
-            {addMsg && <p style={{ fontSize:13, color:c.green, fontWeight:600, textAlign:'center' }}>{addMsg}</p>}
-            <button onClick={handleAddEmployee} disabled={adding}
-              style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', opacity:adding?0.7:1 }}>
-              {adding ? '…' : t.addMember}
+          <div style={{ background:c.bgSoft, borderRadius:16, overflow:'hidden', marginTop:8 }}>
+            <button onClick={()=>{setShowAddForm(p=>!p); setNewName(''); setNewUser(''); setNewPass(''); setAddMsg('');}}
+              style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.bgMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>➕</div>
+                <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.addEmployee}</span>
+              </div>
+              <svg style={{ transform:showAddForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
+            {showAddForm && (
+              <div style={{ padding:'0 16px 16px', display:'flex', flexDirection:'column', gap:10, borderTop:`1px solid ${c.border}` }}>
+                <div style={{ height:12 }}/>
+                <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t.fullName}
+                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                  onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+                <input value={newUser} onChange={e=>setNewUser(e.target.value)} placeholder="username"
+                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                  onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+                <input value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder={t.password} type="password"
+                  onKeyDown={e=>e.key==='Enter'&&handleAddEmployee(e)}
+                  style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
+                  onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+                {addMsg && <p style={{ fontSize:13, color:c.green, fontWeight:600, textAlign:'center' }}>{addMsg}</p>}
+                <button onClick={handleAddEmployee} disabled={adding}
+                  style={{ padding:'12px', background:c.blue, color:'#fff', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', opacity:adding?0.7:1 }}>
+                  {adding ? '…' : t.addMember}
+                </button>
+              </div>
+            )}
           </div>
         </>)}
 
@@ -362,6 +376,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
                 style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
               <input type="password" value={conPw} onChange={e=>setConPw(e.target.value)} placeholder={t.confirmPassword}
+                onKeyDown={e=>e.key==='Enter'&&handleChangePassword(e)}
                 style={{ padding:'11px 13px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:14, color:c.text, background:c.bg }}
                 onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
               {pwMsg && <p style={{ fontSize:13, fontWeight:600, color:pwMsg.ok?c.green:'#FF3B30', textAlign:'center' }}>{pwMsg.text}</p>}
