@@ -736,7 +736,7 @@ function BookingDetails({ booking, user, users, notes, onClose, onDelete, c, t }
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:60, backdropFilter:'blur(2px)' }}/>
-      <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'min(440px, calc(100vw - 32px))', maxHeight:'min(640px, calc(100vh - 48px))', background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:18, zIndex:61, boxShadow:c.sheetShadow||'0 20px 60px rgba(0,0,0,0.4)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'min(560px, calc(100vw - 32px))', height:'min(760px, calc(100vh - 40px))', background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:18, zIndex:61, boxShadow:c.sheetShadow||'0 20px 60px rgba(0,0,0,0.4)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
         <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${c.border}`, display:'flex', alignItems:'flex-start', gap:10 }}>
           <div style={{ width:4, alignSelf:'stretch', background:accent, borderRadius:2, flexShrink:0 }}/>
@@ -764,6 +764,19 @@ function BookingDetails({ booking, user, users, notes, onClose, onDelete, c, t }
           ) : myNotes.map(n=>{
             const author = users.find(u=>u.id===n.user_id);
             const mine = n.user_id===user.id;
+            const isCreator = n.user_id===booking.userId;
+            if (isCreator) {
+              return (
+                <div key={n.id} style={{ background:accent+'12', border:`1px solid ${accent}33`, borderLeft:`3px solid ${accent}`, borderRadius:10, padding:'10px 12px', marginBottom:10 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+                    <span style={{ fontSize:11, fontWeight:700, color:accent, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t.creatorNote} {author?.name?.split(' ')[0]||''}</span>
+                    <span style={{ fontSize:10, color:c.textMuted, marginLeft:'auto' }}>{fmtTs(n.created_at)}</span>
+                  </div>
+                  <p style={{ fontSize:13, color:c.text, lineHeight:1.45, wordBreak:'break-word' }}>{n.text}</p>
+                </div>
+              );
+            }
             return (
               <div key={n.id} style={{ display:'flex', gap:8, marginBottom:10, flexDirection:mine?'row-reverse':'row' }}>
                 <div style={{ width:28, height:28, borderRadius:'50%', background:c.blue+'22', color:c.blue, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{author?.initials||'?'}</div>
