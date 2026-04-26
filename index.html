@@ -76,6 +76,7 @@ const T = {
     confirmDelete: 'Type username to confirm', deleteMember: 'Delete', memberDeleted: 'Member removed.',
     displayName: 'Display Name', newDisplayName: 'New display name', displayNameSaved: 'Display name updated!', displayNameEmpty: 'Name cannot be empty.',
     todaySchedule: "Today's schedule",
+    comments: 'Comments', noComments: 'No comments yet.', addComment: 'Write a comment…', send: 'Post', creatorNote: 'Note from', deleteBooking: 'Delete booking', confirmDeleteBooking: 'Delete this booking?',
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
     language: 'Language', signOut: 'Sign out',
     days: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
@@ -105,6 +106,7 @@ const T = {
     confirmDelete: 'Vpiši uporabniško ime za potrditev', deleteMember: 'Izbriši', memberDeleted: 'Član odstranjen.',
     displayName: 'Prikazno ime', newDisplayName: 'Novo prikazno ime', displayNameSaved: 'Prikazno ime posodobljeno!', displayNameEmpty: 'Ime ne sme biti prazno.',
     todaySchedule: 'Urnik za danes',
+    comments: 'Komentarji', noComments: 'Še ni komentarjev.', addComment: 'Napiši komentar…', send: 'Objavi', creatorNote: 'Opomba uporabnika', deleteBooking: 'Izbriši rezervacijo', confirmDeleteBooking: 'Izbriši to rezervacijo?',
     settings: 'Nastavitve', appearance: 'Videz', darkMode: 'Temni način',
     language: 'Jezik', signOut: 'Odjava',
     days: ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'],
@@ -699,9 +701,109 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
   );
 }
 
+// ─── Booking Details Modal ───────────────────────────────────────────────────
+
+function BookingDetails({ booking, user, users, notes, onClose, onDelete, c, t }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const scrollRef = React.useRef(null);
+  if (!booking) return null;
+
+  const owner = users.find(u=>u.id===booking.userId);
+  const isCar = booking.type==='car';
+  const accent = isCar ? c.blue : c.green;
+  const isMine = booking.userId===user.id;
+  const myNotes = (notes||[]).filter(n=>n.booking_id===booking.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+
+  useEffect(()=>{
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  },[myNotes.length]);
+
+  async function send() {
+    const v = text.trim();
+    if (!v||busy) return;
+    setBusy(true);
+    const { error } = await sb.from('booking_notes').insert({ booking_id:booking.id, user_id:user.id, text:v });
+    setBusy(false);
+    if (!error) setText('');
+  }
+  function fmtTs(ts) {
+    const d = new Date(ts), now = new Date();
+    const sameDay = d.toDateString()===now.toDateString();
+    return sameDay ? fmt12(d.getHours()*60+d.getMinutes()) : `${d.getDate()}.${d.getMonth()+1} · ${fmt12(d.getHours()*60+d.getMinutes())}`;
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:60, backdropFilter:'blur(2px)' }}/>
+      <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:'min(440px, calc(100vw - 32px))', maxHeight:'min(640px, calc(100vh - 48px))', background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:18, zIndex:61, boxShadow:c.sheetShadow||'0 20px 60px rgba(0,0,0,0.4)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+
+        <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${c.border}`, display:'flex', alignItems:'flex-start', gap:10 }}>
+          <div style={{ width:4, alignSelf:'stretch', background:accent, borderRadius:2, flexShrink:0 }}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{isCar?t.carBooking:t.appointment}</p>
+            <p style={{ fontSize:17, fontWeight:700, color:c.text, marginTop:3, wordBreak:'break-word' }}>{booking.note||(isCar?t.carBooking:t.appointment)}</p>
+            <p style={{ fontSize:12, color:c.textMuted, marginTop:4 }}>{owner?.name} · {fmt12(booking.start)} – {fmt12(booking.end)}</p>
+          </div>
+          <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', background:c.bgMid, border:'none', color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+
+        <div ref={scrollRef} style={{ flex:1, overflowY:'auto', padding:'14px 20px' }}>
+          {booking.note && (
+            <div style={{ background:accent+'14', border:`1px solid ${accent}33`, borderRadius:12, padding:'10px 12px', marginBottom:14 }}>
+              <p style={{ fontSize:11, color:accent, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t.creatorNote} {owner?.name?.split(' ')[0]||''}</p>
+              <p style={{ fontSize:13, color:c.text, marginTop:4, lineHeight:1.4, wordBreak:'break-word' }}>{booking.note}</p>
+            </div>
+          )}
+
+          <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{t.comments}</p>
+          {myNotes.length===0 ? (
+            <p style={{ fontSize:13, color:c.textMuted, fontStyle:'italic', padding:'10px 0' }}>{t.noComments}</p>
+          ) : myNotes.map(n=>{
+            const author = users.find(u=>u.id===n.user_id);
+            const mine = n.user_id===user.id;
+            return (
+              <div key={n.id} style={{ display:'flex', gap:8, marginBottom:10, flexDirection:mine?'row-reverse':'row' }}>
+                <div style={{ width:28, height:28, borderRadius:'50%', background:c.blue+'22', color:c.blue, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{author?.initials||'?'}</div>
+                <div style={{ maxWidth:'78%' }}>
+                  <div style={{ display:'flex', gap:6, alignItems:'baseline', marginBottom:2, justifyContent:mine?'flex-end':'flex-start' }}>
+                    <span style={{ fontSize:11, fontWeight:600, color:c.textSub }}>{author?.name||'?'}</span>
+                    <span style={{ fontSize:10, color:c.textMuted }}>{fmtTs(n.created_at)}</span>
+                  </div>
+                  <div style={{ background:mine?c.blue:c.bgMid, color:mine?'#fff':c.text, padding:'8px 11px', borderRadius:12, fontSize:13, lineHeight:1.4, wordBreak:'break-word' }}>{n.text}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ padding:'10px 12px', borderTop:`1px solid ${c.border}`, display:'flex', gap:8, alignItems:'flex-end' }}>
+          <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={t.addComment}
+            onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } }}
+            rows={1}
+            style={{ flex:1, resize:'none', maxHeight:100, padding:'9px 12px', borderRadius:12, border:`1px solid ${c.borderInput||c.border}`, background:c.bgMid, color:c.text, fontSize:13, fontFamily:'inherit', outline:'none' }}/>
+          <button onClick={send} disabled={!text.trim()||busy}
+            style={{ width:38, height:38, borderRadius:'50%', border:'none', background:text.trim()?c.blue:c.bgMid, color:text.trim()?'#fff':c.textMuted, cursor:text.trim()?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12l18-9-5 18-4-8-9-1z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+
+        {isMine && onDelete && (
+          <button onClick={()=>{ if(confirm(t.confirmDeleteBooking)) onDelete(booking); }}
+            style={{ padding:'10px', border:'none', borderTop:`1px solid ${c.border}`, background:'transparent', color:'#FF3B30', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+            {t.deleteBooking}
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
 
-function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user, tweaks, today, users, c, t }) {
+function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBookingClick, user, tweaks, today, users, c, t }) {
   const startH=tweaks.startHour||7, endH=tweaks.endHour||20, slotH=52, timeW=52;
   const days=view==='week'?Array.from({length:7},(_,i)=>addDays(weekStart,i)):[focusDate];
   const hours=[]; for(let h=startH;h<=endH;h++) hours.push(h);
@@ -757,7 +859,8 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user,
                   const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car';
                   const bg=isCar?c.blue:c.green;
                   return (
-                    <div key={b.id} style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:8, padding:'5px 8px', zIndex:2, overflow:'hidden', cursor:'default', boxSizing:'border-box' }}>
+                    <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
+                      style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:8, padding:'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box' }}>
                       <div style={{ fontSize:11, fontWeight:700, color:bg, lineHeight:1.3 }}>
                         {isCar?'🚗':'📋'} {b.note||(isCar?t.carBooking:t.appointment)}
                       </div>
@@ -783,7 +886,9 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, user,
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
 
-function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, users, c, t }) {
+function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, users, notes, c, t }) {
+  const [openBooking, setOpenBooking] = useState(null);
+  const liveBooking = openBooking ? bookings.find(b=>b.id===openBooking.id) : null;
   const [view, setView]=useState('week');
   const [weekStart, setWeekStart]=useState(startOfWeek(today));
   const [focusDay, setFocusDay]=useState(today);
@@ -860,7 +965,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       </div>
 
       <CalendarGrid view={view} weekStart={weekStart} focusDate={focusDay} bookings={filteredBookings}
-        onSlotClick={setSlot} user={user} tweaks={tweaks} today={today} users={users} c={c} t={t}/>
+        onSlotClick={setSlot} onBookingClick={setOpenBooking} user={user} tweaks={tweaks} today={today} users={users} c={c} t={t}/>
 
       <div style={{ display:'flex', gap:16, padding:'7px 16px', borderTop:`1px solid ${c.border}`, flexShrink:0, justifyContent:'center', background:c.bg }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.blue }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.carLegend}</span></div>
@@ -868,6 +973,9 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       </div>
 
       {slot&&<BookingSheet slot={slot} user={user} bookings={bookings} onBook={handleBook} onClose={()=>setSlot(null)} tweaks={tweaks} c={c} t={t}/>}
+      {liveBooking&&<BookingDetails booking={liveBooking} user={user} users={users} notes={notes} c={c} t={t}
+        onClose={()=>setOpenBooking(null)}
+        onDelete={async(b)=>{ setOpenBooking(null); setBookings(prev=>prev.filter(x=>x.id!==b.id)); await sb.from('bookings').delete().eq('id',b.id); }}/>}
       {toast&&<div style={{ position:'fixed', bottom:32, left:'50%', transform:'translateX(-50%)', background:toast.color, color:'#fff', padding:'10px 20px', borderRadius:50, fontSize:14, fontWeight:600, zIndex:100, whiteSpace:'nowrap', boxShadow:'0 4px 20px rgba(0,0,0,0.2)', pointerEvents:'none' }}>{toast.msg}</div>}
     </div>
   );
@@ -933,6 +1041,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
   const today=useMemo(()=>getToday(),[]);
   const [activeTab, setActiveTab]=useState('today');
   const [bookings, setBookings]=useState([]);
+  const [notes, setNotes]=useState([]);
   const [slot, setSlot]=useState(null);
   const [showSettings, setShowSettings]=useState(false);
 
@@ -943,7 +1052,14 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
       if(p.eventType==='UPDATE') setBookings(prev=>prev.map(b=>b.id===p.new.id?dbToBooking(p.new):b));
       if(p.eventType==='DELETE') setBookings(prev=>prev.filter(b=>b.id!==p.old.id));
     }).subscribe();
-    return ()=>sb.removeChannel(ch);
+
+    sb.from('booking_notes').select('*').then(({data})=>{ if(data) setNotes(data); });
+    const cn=sb.channel('booking-notes-all').on('postgres_changes',{event:'*',schema:'public',table:'booking_notes'},(p)=>{
+      if(p.eventType==='INSERT') setNotes(prev=>prev.some(n=>n.id===p.new.id)?prev:[...prev,p.new]);
+      if(p.eventType==='UPDATE') setNotes(prev=>prev.map(n=>n.id===p.new.id?p.new:n));
+      if(p.eventType==='DELETE') setNotes(prev=>prev.filter(n=>n.id!==p.old.id));
+    }).subscribe();
+    return ()=>{ sb.removeChannel(ch); sb.removeChannel(cn); };
   },[]);
 
   const t=T[lang]||T.en;
@@ -958,7 +1074,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
       <div className="main-area" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
         {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
-        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} c={c} t={t}/>}
+        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} notes={notes} c={c} t={t}/>}
       </div>
 
       {/* Mobile tab bar */}
