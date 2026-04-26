@@ -308,7 +308,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
               onMouseEnter={e=>e.currentTarget.style.background=c.bgMid}
               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{flag}</div>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:c.blue, letterSpacing:'0.02em' }}>{flag}</div>
                 <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{label}</span>
               </div>
               {lang===code && (
