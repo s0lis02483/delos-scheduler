@@ -308,7 +308,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
               onMouseEnter={e=>e.currentTarget.style.background=c.bgMid}
               onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:c.blue, letterSpacing:'0.02em' }}>{flag}</div>
+                <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:c.blue, letterSpacing:'0.02em' }}>{flag}</div>
                 <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{label}</span>
               </div>
               {lang===code && (
@@ -421,7 +421,7 @@ function SettingsPage({ user, dark, lang, onToggleDark, onToggleLang, onLogout, 
           <button onClick={()=>{setShowPwForm(p=>!p); setPwMsg(null); setCurPw(''); setNewPw(''); setConPw('');}}
             style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6" cy="6" r="3.5" stroke={c.blue} strokeWidth="1.5"/><path d="M8.5 8.5l4 4" stroke={c.blue} strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+              <div style={{ width:32, height:32, borderRadius:9, background:c.blue+'22', display:'flex', alignItems:'center', justifyContent:'center' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={c.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="15" r="4"/><path d="M12 11.5l8-8M17 3l3 3M19 6l-2 2"/></svg></div>
               <span style={{ fontSize:15, fontWeight:500, color:c.text }}>{t.changePassword}</span>
             </div>
             <svg style={{ transform:showPwForm?'rotate(180deg)':'none', transition:'transform 0.2s', color:c.textMuted }} width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
