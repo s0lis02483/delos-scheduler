@@ -494,13 +494,13 @@ function LoginScreen({ onLogin, users, c, t }) {
         <div style={{ background:c.bg, borderRadius:16, padding:'28px 24px', boxShadow:c.shadow }}>
           <form onSubmit={handleSubmit}>
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:c.textSub, marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>{t.username}</label>
-            <input type="text" value={username} onChange={e=>setUsername(e.target.value)} placeholder="sabina.ivankovic"
+            <input type="text" value={username} onChange={e=>setUsername(e.target.value)}
               style={{ width:'100%', padding:'12px 14px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:15, marginBottom:16, background:c.bg, color:c.text }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="username"/>
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="off"/>
             <label style={{ display:'block', fontSize:12, fontWeight:600, color:c.textSub, marginBottom:6, letterSpacing:'0.04em', textTransform:'uppercase' }}>{t.password}</label>
-            <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••"
+            <input type="password" value={pw} onChange={e=>setPw(e.target.value)}
               style={{ width:'100%', padding:'12px 14px', border:`1.5px solid ${c.borderInput}`, borderRadius:10, fontSize:15, marginBottom:20, background:c.bg, color:c.text }}
-              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="current-password"/>
+              onFocus={e=>e.target.style.borderColor=c.blue} onBlur={e=>e.target.style.borderColor=c.borderInput} autoComplete="off"/>
             {err && <p style={{ color:'#FF3B30', fontSize:13, marginBottom:12, textAlign:'center' }}>{err}</p>}
             <button type="submit" disabled={loading} style={{ width:'100%', padding:'13px', background:c.blue, color:'#fff', borderRadius:10, fontSize:15, fontWeight:600, cursor:'pointer', opacity:loading?0.7:1 }}>
               {loading ? t.signingIn : t.signIn}
