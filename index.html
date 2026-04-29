@@ -49,8 +49,8 @@ const sb = window.supabase.createClient(
   'https://qbayuslffeqwiutgbqot.supabase.co',
   'sb_publishable_mc5GV0D0-hsPzKD5rhyDQg_a3K5ZpYK'
 );
-function dbToBooking(r) { return { id:r.id, type:r.type, vehicle:r.vehicle||null, userId:r.user_id, date:r.date, start:r.start_min, end:r.end_min, note:r.note||'' }; }
-function bookingToDb(b) { return { id:b.id, type:b.type, vehicle:b.vehicle||null, user_id:b.userId, date:b.date, start_min:b.start, end_min:b.end, note:b.note||'' }; }
+function dbToBooking(r) { return { id:r.id, type:r.type, vehicle:r.vehicle||null, participants:r.participants||null, userId:r.user_id, date:r.date, start:r.start_min, end:r.end_min, note:r.note||'' }; }
+function bookingToDb(b) { return { id:b.id, type:b.type, vehicle:b.vehicle||null, participants:b.participants||null, user_id:b.userId, date:b.date, start_min:b.start, end_min:b.end, note:b.note||'' }; }
 
 const VEHICLES = [
   { id:'bmw1',  label:'BMW 1',  icon:'🚗' },
@@ -71,6 +71,7 @@ const T = {
     noBookings: 'No bookings today', addBooking: '+ Add booking',
     earlier: 'Earlier', myTodos: 'My to-dos', addTodo: 'Add a to-do…',
     carBooking: 'Car Booking', appointment: 'Appointment', vehicleBooked: 'Booked by',
+    bookRoom: 'Book Room', bookPerson: 'Book Person', selectPeople: 'Select people (min. 1)', minOnePerson: 'Select at least 1 person',
     duration: 'Duration', addNote: 'Add a note (optional)',
     nextAvailable: 'Next available:', bookedBy: 'Booked by',
     alreadyBooked: 'You already have a booking here',
@@ -101,6 +102,7 @@ const T = {
     noBookings: 'Danes ni rezervacij', addBooking: '+ Dodaj rezervacijo',
     earlier: 'Prej', myTodos: 'Moje naloge', addTodo: 'Dodaj nalogo…',
     carBooking: 'Rezervacija vozila', appointment: 'Sestanek', vehicleBooked: 'Rezerviral/a',
+    bookRoom: 'Rezerviraj sobo', bookPerson: 'Rezerviraj osebo', selectPeople: 'Izberi osebe (min. 1)', minOnePerson: 'Izberi vsaj 1 osebo',
     duration: 'Trajanje', addNote: 'Dodaj opombo (neobvezno)',
     nextAvailable: 'Naslednji prosti:', bookedBy: 'Rezerviral/a',
     alreadyBooked: 'Tukaj že imate rezervacijo',
@@ -579,7 +581,7 @@ function DurationPicker({ duration, onChange, c }) {
   );
 }
 
-function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
+function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c, t }) {
   const [duration, setDuration] = useState(null);
   const [note, setNote] = useState('');
   if (!slot) return null;
@@ -591,6 +593,10 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
   const dayName=t.daysFull[slot.date.getDay()===0?6:slot.date.getDay()-1];
   const dateStr=`${dayName}, ${t.months[slot.date.getMonth()]} ${slot.date.getDate()}`;
 
+  const [showPersonPicker, setShowPersonPicker] = useState(false);
+  const [selectedPersons, setSelectedPersons] = useState([]);
+  const [personErr, setPersonErr] = useState(false);
+
   const vehicleStatus = VEHICLES.map(v => {
     const conflicts = checkConflict(bookings,'car',dk,start,end,user.id,v.id);
     const blocked = conflicts.length>0;
@@ -599,6 +605,11 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
     return { ...v, blocked, next, bookedBy };
   });
 
+  function togglePerson(id) {
+    setSelectedPersons(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+    setPersonErr(false);
+  }
+
   function book(type, vehicle) {
     if (!duration) return;
     if (type==='appointment'&&apptBlocked) return;
@@ -606,7 +617,12 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
       const vs = vehicleStatus.find(v=>v.id===vehicle);
       if (vs?.blocked) return;
     }
-    onBook({ type, vehicle:vehicle||null, date:dk, start, end, note:note.trim(), userId:user.id });
+    if (type==='person') {
+      if (selectedPersons.length===0) { setPersonErr(true); return; }
+      onBook({ type, vehicle:null, participants:selectedPersons, date:dk, start, end, note:note.trim(), userId:user.id });
+      return;
+    }
+    onBook({ type, vehicle:vehicle||null, participants:null, date:dk, start, end, note:note.trim(), userId:user.id });
   }
 
   return (
@@ -643,19 +659,45 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
                 </button>
               ))}
             </div>
-            <div>
+            <div style={{ display:'flex', gap:8 }}>
               <button onClick={()=>book('appointment',null)} disabled={apptBlocked||!duration}
-                style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:apptBlocked||!duration?c.bgMid:c.green, color:apptBlocked||!duration?c.textMuted:'#fff', fontSize:16, fontWeight:600, cursor:apptBlocked||!duration?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12, opacity:!duration?0.5:1, transition:'all 0.2s' }}>
-                <span style={{ fontSize:22 }}>📋</span>
-                <div style={{ textAlign:'left' }}>
-                  <div>{t.appointment}</div>
-                  {apptBlocked&&<div style={{ fontSize:12, fontWeight:400, opacity:0.7, marginTop:1 }}>{t.alreadyBooked}</div>}
-                </div>
-                {!apptBlocked && <svg style={{ marginLeft:'auto' }} width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10h6M10 7l3 3-3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                {apptBlocked && <span style={{ marginLeft:'auto', fontSize:18 }}>🔒</span>}
+                style={{ flex:1, padding:'14px 12px', borderRadius:14, border:'none', background:apptBlocked||!duration?c.bgMid:c.green, color:apptBlocked||!duration?c.textMuted:'#fff', fontSize:14, fontWeight:700, cursor:apptBlocked||!duration?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:10, opacity:!duration?0.5:1, transition:'all 0.2s' }}>
+                <span style={{ fontSize:20 }}>🏠</span>
+                <span>{t.bookRoom||'Rezerviraj sobo'}</span>
+                {!apptBlocked && <svg style={{ marginLeft:'auto' }} width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M7 10h6M10 7l3 3-3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                {apptBlocked && <span style={{ marginLeft:'auto' }}>🔒</span>}
               </button>
-              {apptBlocked&&nextAppt&&<p style={{ fontSize:12, color:c.textMuted, marginTop:6, paddingLeft:4 }}>{t.nextAvailable} <span style={{ color:c.green, fontWeight:600 }}>{fmt12(nextAppt)}</span></p>}
+              <button onClick={()=>{ if(!duration) return; setShowPersonPicker(p=>!p); setPersonErr(false); }} disabled={!duration}
+                style={{ flex:1, padding:'14px 12px', borderRadius:14, border:`2px solid ${showPersonPicker?c.green:(!duration?c.border:c.green+'66')}`, background:showPersonPicker?c.green+'22':'transparent', color:!duration?c.textMuted:c.green, fontSize:14, fontWeight:700, cursor:!duration?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:10, opacity:!duration?0.5:1, transition:'all 0.2s' }}>
+                <span style={{ fontSize:20 }}>👤</span>
+                <span>{t.bookPerson||'Rezerviraj osebo'}</span>
+                <svg style={{ marginLeft:'auto' }} width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={showPersonPicker?"M2 8l4-4 4 4":"M2 4l4 4 4-4"} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
             </div>
+            {showPersonPicker && (
+              <div style={{ background:c.bgMid, borderRadius:12, padding:'10px 12px', display:'flex', flexDirection:'column', gap:6 }}>
+                <p style={{ fontSize:11, fontWeight:700, color:personErr?'#FF3B30':c.textMuted, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:2 }}>
+                  {personErr ? (t.minOnePerson||'Izberi vsaj 1 osebo') : (t.selectPeople||'Izberi osebe (min. 1)')}
+                </p>
+                {users.map(u=>{
+                  const sel = selectedPersons.includes(u.id);
+                  return (
+                    <button key={u.id} onClick={()=>togglePerson(u.id)}
+                      style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, border:`1.5px solid ${sel?c.green:c.border}`, background:sel?c.green+'18':'transparent', cursor:'pointer' }}>
+                      <div style={{ width:28, height:28, borderRadius:'50%', background:sel?c.green+'33':c.blue+'22', color:sel?c.green:c.blue, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{u.initials}</div>
+                      <span style={{ fontSize:13, fontWeight:600, color:c.text, flex:1, textAlign:'left' }}>{u.name}</span>
+                      <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${sel?c.green:c.border}`, background:sel?c.green:'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {sel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                    </button>
+                  );
+                })}
+                <button onClick={()=>book('person',null)} disabled={selectedPersons.length===0}
+                  style={{ marginTop:4, padding:'11px', borderRadius:10, border:'none', background:selectedPersons.length>0?c.green:c.bgSoft, color:selectedPersons.length>0?'#fff':c.textMuted, fontWeight:700, fontSize:14, cursor:selectedPersons.length>0?'pointer':'not-allowed' }}>
+                  {selectedPersons.length>0 ? `Rezerviraj (${selectedPersons.length})` : (t.selectPeople||'Izberi osebe')}
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop:16, paddingBottom:8 }}>
@@ -955,18 +997,19 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                 })}
                 {dayBkgs.map(b=>{
                   const top=minutesToY(b.start), height=((b.end-b.start)/30)*slotH-3;
-                  const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car';
+                  const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car', isPerson=b.type==='person';
                   const bg=isCar?c.blue:c.green;
                   const veh=isCar&&b.vehicle?VEHICLES.find(v=>v.id===b.vehicle):null;
-                  const blockLabel=isCar?(veh?veh.label:t.carBooking):t.appointment;
-                  const blockIcon=isCar?(veh?veh.icon:'🚗'):'📋';
+                  const participantNames=isPerson&&b.participants?b.participants.map(id=>users.find(u=>u.id===id)?.name?.split(' ')[0]||'?').join(', '):'';
+                  const blockLabel=isCar?(veh?veh.label:t.carBooking):isPerson?participantNames:t.appointment;
+                  const blockIcon=isCar?(veh?veh.icon:'🚗'):isPerson?'👤':'🏠';
                   return (
                     <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
                       style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:8, padding:'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box' }}>
                       <div style={{ fontSize:11, fontWeight:700, color:bg, lineHeight:1.3 }}>
                         {blockIcon} {b.note||blockLabel}
                       </div>
-                      {height>35&&<div style={{ fontSize:10, color:bg, opacity:0.7, marginTop:2 }}>{veh&&!b.note?'':blockLabel+' · '}{owner?.name} · {fmt12(b.start)}</div>}
+                      {height>35&&<div style={{ fontSize:10, color:bg, opacity:0.7, marginTop:2 }}>{owner?.name} · {fmt12(b.start)}</div>}
                     </div>
                   );
                 })}
@@ -999,8 +1042,8 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   const [showPicker, setShowPicker]=useState(false);
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
-  async function handleBook({type,vehicle,date,start,end,note,userId}) {
-    const b={id:`b${Date.now()}`,type,vehicle:vehicle||null,userId,date,start,end,note};
+  async function handleBook({type,vehicle,participants,date,start,end,note,userId}) {
+    const b={id:`b${Date.now()}`,type,vehicle:vehicle||null,participants:participants||null,userId,date,start,end,note};
     setBookings(prev=>[...prev,b]);
     setSlot(null);
     const {error} = await sb.from('bookings').insert(bookingToDb(b));
@@ -1075,7 +1118,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
         <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.green }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.apptLegend}</span></div>
       </div>
 
-      {slot&&<BookingSheet slot={slot} user={user} bookings={bookings} onBook={handleBook} onClose={()=>setSlot(null)} tweaks={tweaks} c={c} t={t}/>}
+      {slot&&<BookingSheet slot={slot} user={user} bookings={bookings} users={users} onBook={handleBook} onClose={()=>setSlot(null)} tweaks={tweaks} c={c} t={t}/>}
       {liveBooking&&<BookingDetails booking={liveBooking} user={user} users={users} notes={notes} c={c} t={t}
         onClose={()=>setOpenBooking(null)}
         onDelete={async(b)=>{ setOpenBooking(null); setBookings(prev=>prev.filter(x=>x.id!==b.id)); await sb.from('bookings').delete().eq('id',b.id); }}/>}
