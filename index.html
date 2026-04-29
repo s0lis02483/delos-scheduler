@@ -164,7 +164,7 @@ function getToday() { const d=new Date(); return new Date(d.getFullYear(),d.getM
 function dateKey(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDays(d,n) { const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function startOfWeek(d) { const x=new Date(d); const day=x.getDay(); x.setDate(x.getDate()-(day===0?6:day-1)); return x; }
-function fmt12(minutes) { const h=Math.floor(minutes/60),m=minutes%60,ap=h>=12?'PM':'AM',hh=h>12?h-12:h===0?12:h; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; }
+function fmt12(minutes) { const h=Math.floor(minutes/60),m=minutes%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
 function fmtHour(h) { const ap=h>=12?'PM':'AM',hh=h>12?h-12:h===0?12:h; return `${hh} ${ap}`; }
 function sameDay(a,b) { return dateKey(a)===dateKey(b); }
 function hasOverlap(as,ae,bs,be) { return as<be && ae>bs; }
