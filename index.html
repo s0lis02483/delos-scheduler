@@ -566,14 +566,28 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
             </button>
           </div>
 
-          <div style={{ display:'flex', gap:6, marginTop:16, marginBottom:14, alignItems:'center' }}>
-            <p style={{ fontSize:12, color:duration?c.textMuted:'#FF9500', fontWeight:duration?400:700, marginRight:4, transition:'color 0.2s' }}>{t.duration}{!duration&&' ←'}</p>
+          <div style={{ display:'flex', gap:6, marginTop:16, marginBottom:14, alignItems:'center', flexWrap:'wrap' }}>
+            <p style={{ fontSize:12, color:duration?c.textMuted:'#FF9500', fontWeight:duration?400:700, marginRight:4, transition:'color 0.2s', flexShrink:0 }}>{t.duration}{!duration&&' ←'}</p>
             {[30,60,90,120].map(d => (
               <button key={d} onClick={()=>setDuration(d)}
-                style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${duration===d?c.blue:c.borderInput}`, background:duration===d?c.blue:c.bg, color:duration===d?'#fff':c.textSub, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${duration===d?c.blue:c.borderInput}`, background:duration===d?c.blue:c.bg, color:duration===d?'#fff':c.textSub, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s', flexShrink:0 }}>
                 {t.dur[d]}
               </button>
             ))}
+            <div style={{ display:'flex', alignItems:'center', gap:4, border:`1.5px solid ${![30,60,90,120].includes(duration)&&duration?c.blue:c.borderInput}`, borderRadius:20, padding:'3px 10px 3px 12px', background:![30,60,90,120].includes(duration)&&duration?c.blue:c.bg, transition:'all 0.15s' }}>
+              <input
+                type="number" min="0.5" max="24" step="0.5"
+                placeholder="?"
+                value={![30,60,90,120].includes(duration)&&duration ? duration/60 : ''}
+                onChange={e=>{
+                  const h=parseFloat(e.target.value);
+                  if(!isNaN(h)&&h>0) setDuration(Math.round(h*60));
+                  else if(e.target.value==='') setDuration(null);
+                }}
+                style={{ width:36, border:'none', background:'transparent', fontSize:12, fontWeight:600, color:![30,60,90,120].includes(duration)&&duration?'#fff':c.textSub, outline:'none', textAlign:'center' }}
+              />
+              <span style={{ fontSize:12, fontWeight:600, color:![30,60,90,120].includes(duration)&&duration?'#fff':c.textMuted }}>h</span>
+            </div>
           </div>
           {!duration && <p style={{ fontSize:12, color:'#FF9500', marginBottom:10, marginTop:-6 }}>Izberi trajanje za nadaljevanje</p>}
 
