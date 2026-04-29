@@ -522,15 +522,24 @@ function LoginScreen({ onLogin, users, c, t }) {
 
 function DurationPicker({ duration, onChange, c }) {
   const [open, setOpen] = useState(false);
+  const [popPos, setPopPos] = useState({ top:0, left:0 });
+  const btnRef = React.useRef(null);
+
   const hrs  = duration ? Math.floor(duration/60) : 0;
   const mins = duration ? duration%60 : 0;
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPopPos({ top: r.bottom + 8, left: r.left });
+    }
+    setOpen(o=>!o);
+  }
 
   function adjust(type, delta) {
     let h = duration ? Math.floor(duration/60) : 0;
     let m = duration ? duration%60 : 0;
-    if (type==='h') {
-      h = Math.max(0, h+delta);
-    }
+    if (type==='h') h = Math.max(0, h+delta);
     if (type==='m') {
       m = m + delta*15;
       if (m >= 60) { h++; m -= 60; }
@@ -543,16 +552,16 @@ function DurationPicker({ duration, onChange, c }) {
   const label = duration ? `${hrs>0?hrs+'h ':''}${mins>0?mins+'m':''}`.trim() : '— : —';
 
   return (
-    <div style={{ position:'relative' }}>
-      <button onClick={()=>setOpen(o=>!o)}
+    <div>
+      <button ref={btnRef} onClick={handleOpen}
         style={{ padding:'6px 14px', borderRadius:20, border:`1.5px solid ${duration?c.blue:c.borderInput}`, background:duration?c.blue:c.bg, color:duration?'#fff':c.textSub, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         {label}
       </button>
-      {open && (
+      {open && ReactDOM.createPortal(
         <>
-          <div onClick={()=>setOpen(false)} style={{ position:'fixed', inset:0, zIndex:70 }}/>
-          <div style={{ position:'absolute', top:40, left:0, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:16, padding:'16px 20px', zIndex:71, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', gap:16, alignItems:'center' }}>
+          <div onClick={()=>setOpen(false)} style={{ position:'fixed', inset:0, zIndex:200 }}/>
+          <div style={{ position:'fixed', top:popPos.top, left:popPos.left, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:16, padding:'16px 20px', zIndex:201, boxShadow:'0 8px 32px rgba(0,0,0,0.4)', display:'flex', gap:16, alignItems:'center' }}>
             {[{label:'Ure', type:'h', val:hrs},{label:'Min', type:'m', val:mins}].map(col=>(
               <div key={col.type} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
                 <span style={{ fontSize:10, fontWeight:700, color:c.textMuted, textTransform:'uppercase', letterSpacing:'0.06em' }}>{col.label}</span>
@@ -563,7 +572,8 @@ function DurationPicker({ duration, onChange, c }) {
             ))}
             <button onClick={()=>setOpen(false)} style={{ marginLeft:8, padding:'8px 14px', borderRadius:10, border:'none', background:c.blue, color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer' }}>OK</button>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
