@@ -1006,10 +1006,10 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
                 {rawParts.map(uid=>{
                   const u = users.find(x=>x.id===uid);
                   return (
-                    <div key={uid} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px 5px 6px', borderRadius:20, background:c.green+'18', border:`1px solid ${c.green}44` }}>
-                      <div style={{ width:22,height:22,borderRadius:'50%',background:c.green+'33',color:c.green,fontSize:8,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{u?.initials||'?'}</div>
+                    <div key={uid} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px 5px 6px', borderRadius:20, background:c.bgMid, border:`1px solid ${c.border}` }}>
+                      <div style={{ width:22,height:22,borderRadius:'50%',background:c.blue+'22',color:c.blue,fontSize:8,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{u?.initials||'?'}</div>
                       <span style={{ fontSize:12,fontWeight:600,color:c.text }}>{u?.name||uid}</span>
-                      {isMine && <button onClick={()=>toggleParticipant(uid,false)} style={{ width:16,height:16,borderRadius:'50%',border:'none',background:'#FF3B3033',color:'#FF3B30',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,padding:0,lineHeight:1 }}>×</button>}
+                      {isMine && <button onClick={()=>toggleParticipant(uid,false)} style={{ width:16,height:16,borderRadius:'50%',border:'none',background:c.bgDeep,color:c.textMuted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,padding:0,lineHeight:1 }}>×</button>}
                     </div>
                   );
                 })}
