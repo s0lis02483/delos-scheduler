@@ -689,7 +689,7 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
                       if(clash){
                         const veh=clash.vehicle?VEHICLES.find(v=>v.id===clash.vehicle):null;
                         const what=clash.type==='car'?(veh?veh.label:'vozilo'):clash.type==='person'?'sestanek':'sobo';
-                        personConflictMap[u.id]=`Ima ob ${fmt12(clash.start)} rezerviran/o ${what}`;
+                        personConflictMap[u.id]=`${u.name.split(' ')[0]} ima ob ${fmt12(clash.start)} rezerviran/o ${what}`;
                       }
                     });
                   }
@@ -882,7 +882,8 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
     const bo = users.find(u=>u.id===b.userId);
     const veh = b.vehicle ? VEHICLES.find(v=>v.id===b.vehicle) : null;
     const what = b.type==='car' ? (veh?veh.label:'vozilo') : b.type==='person' ? 'sestanek' : 'sobo';
-    return `${bo?.name||'?'} ima ob ${fmt12(b.start)} rezerviran/o ${what}`;
+    const isMe = b.userId===user.id;
+    return isMe ? `Imaš ob ${fmt12(b.start)} rezerviran/o ${what}` : `${bo?.name||'?'} ima ob ${fmt12(b.start)} rezerviran/o ${what}`;
   }) : [];
 
   function adjStart(type, delta) {
