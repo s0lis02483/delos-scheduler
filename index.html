@@ -521,11 +521,11 @@ function LoginScreen({ onLogin, users, c, t }) {
 // ─── Booking Sheet ────────────────────────────────────────────────────────────
 
 function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
-  const [duration, setDuration] = useState(tweaks.slotDuration||60);
+  const [duration, setDuration] = useState(null);
   const [note, setNote] = useState('');
   if (!slot) return null;
 
-  const start=slot.hour*60+slot.minute, end=start+duration, dk=dateKey(slot.date);
+  const start=slot.hour*60+slot.minute, end=start+(duration||60), dk=dateKey(slot.date);
   const apptConflicts=checkConflict(bookings,'appointment',dk,start,end,user.id,null);
   const apptBlocked=apptConflicts.length>0;
   const nextAppt=apptBlocked?nextFreeSlot(bookings,'appointment',dk,duration,user.id,start,null):null;
@@ -541,6 +541,7 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
   });
 
   function book(type, vehicle) {
+    if (!duration) return;
     if (type==='appointment'&&apptBlocked) return;
     if (type==='car'&&vehicle) {
       const vs = vehicleStatus.find(v=>v.id===vehicle);
@@ -558,15 +559,15 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
             <div>
               <p style={{ fontSize:13, color:c.textMuted, fontWeight:500 }}>{dateStr}</p>
-              <p style={{ fontSize:20, fontWeight:700, color:c.text, marginTop:2 }}>{fmt12(start)} <span style={{ color:c.textMuted, fontWeight:400 }}>→</span> {fmt12(end)}</p>
+              <p style={{ fontSize:20, fontWeight:700, color:c.text, marginTop:2 }}>{fmt12(start)} <span style={{ color:c.textMuted, fontWeight:400 }}>→</span> {duration ? fmt12(end) : <span style={{ color:c.textMuted, fontSize:16 }}>?</span>}</p>
             </div>
             <button onClick={onClose} style={{ background:c.bgMid, borderRadius:50, width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', color:c.textSub }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
           </div>
 
-          <div style={{ display:'flex', gap:6, marginTop:16, marginBottom:20, alignItems:'center' }}>
-            <p style={{ fontSize:12, color:c.textMuted, marginRight:4 }}>{t.duration}</p>
+          <div style={{ display:'flex', gap:6, marginTop:16, marginBottom:14, alignItems:'center' }}>
+            <p style={{ fontSize:12, color:duration?c.textMuted:'#FF9500', fontWeight:duration?400:700, marginRight:4, transition:'color 0.2s' }}>{t.duration}{!duration&&' ←'}</p>
             {[30,60,90,120].map(d => (
               <button key={d} onClick={()=>setDuration(d)}
                 style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${duration===d?c.blue:c.borderInput}`, background:duration===d?c.blue:c.bg, color:duration===d?'#fff':c.textSub, fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
@@ -574,12 +575,13 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
               </button>
             ))}
           </div>
+          {!duration && <p style={{ fontSize:12, color:'#FF9500', marginBottom:10, marginTop:-6 }}>Izberi trajanje za nadaljevanje</p>}
 
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <div style={{ display:'flex', gap:8 }}>
               {vehicleStatus.map((v)=>(
-                <button key={v.id} onClick={()=>book('car',v.id)} disabled={v.blocked}
-                  style={{ flex:1, padding:'14px 8px', borderRadius:14, border:'none', background:v.blocked?c.bgMid:c.blue, color:v.blocked?c.textMuted:'#fff', fontSize:13, fontWeight:700, cursor:v.blocked?'not-allowed':'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, transition:'opacity 0.15s' }}>
+                <button key={v.id} onClick={()=>book('car',v.id)} disabled={v.blocked||!duration}
+                  style={{ flex:1, padding:'14px 8px', borderRadius:14, border:'none', background:v.blocked||!duration?c.bgMid:c.blue, color:v.blocked||!duration?c.textMuted:'#fff', fontSize:13, fontWeight:700, cursor:v.blocked||!duration?'not-allowed':'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, transition:'all 0.2s', opacity:!duration?0.5:1 }}>
                   <span style={{ fontSize:18 }}>{v.blocked?'🔒':v.icon}</span>
                   <span>{v.label}</span>
                   {v.blocked && <span style={{ fontSize:10, fontWeight:400, opacity:0.75, textAlign:'center', lineHeight:1.2 }}>{v.bookedBy}</span>}
@@ -588,8 +590,8 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
               ))}
             </div>
             <div>
-              <button onClick={()=>book('appointment',null)} disabled={apptBlocked}
-                style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:apptBlocked?c.bgMid:c.green, color:apptBlocked?c.textMuted:'#fff', fontSize:16, fontWeight:600, cursor:apptBlocked?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12 }}>
+              <button onClick={()=>book('appointment',null)} disabled={apptBlocked||!duration}
+                style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:apptBlocked||!duration?c.bgMid:c.green, color:apptBlocked||!duration?c.textMuted:'#fff', fontSize:16, fontWeight:600, cursor:apptBlocked||!duration?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12, opacity:!duration?0.5:1, transition:'all 0.2s' }}>
                 <span style={{ fontSize:22 }}>📋</span>
                 <div style={{ textAlign:'left' }}>
                   <div>{t.appointment}</div>
