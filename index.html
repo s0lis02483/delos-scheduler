@@ -683,7 +683,8 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
                     users.filter(u=>u.id!==user.id).forEach(u=>{
                       const clash = bookings.find(b=>{
                         if(b.date!==dk||!hasOverlap(start,end,b.start,b.end)) return false;
-                        return b.userId===u.id || (b.participants&&b.participants.includes(u.id));
+                        const parts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
+                        return b.userId===u.id || parts.includes(u.id);
                       });
                       if(clash){
                         const veh=clash.vehicle?VEHICLES.find(v=>v.id===clash.vehicle):null;
