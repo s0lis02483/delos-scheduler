@@ -1218,7 +1218,11 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   }
 
   const blue=tweaks.primaryColor||'#0E76BC';
-  const filteredBookings = filterUser==='all' ? bookings : bookings.filter(b=>b.userId===filterUser);
+  const filteredBookings = filterUser==='all' ? bookings : bookings.filter(b=>{
+    if (b.userId===filterUser) return true;
+    const parts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
+    return parts.includes(filterUser);
+  });
   const weekEnd=addDays(weekStart,6);
   const navLabel=view==='week'
     ?`${t.months[weekStart.getMonth()].slice(0,3)} ${weekStart.getDate()} – ${weekEnd.getMonth()!==weekStart.getMonth()?t.months[weekEnd.getMonth()].slice(0,3)+' ':''}${weekEnd.getDate()}, ${weekEnd.getFullYear()}`
