@@ -932,7 +932,7 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
               <p style={{ fontSize:12, color:c.textMuted, marginTop:4 }}>{owner?.name} · {fmt12(booking.start)} – {fmt12(booking.end)}</p>
             </div>
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-              {isMine && onEdit && (
+              {(isMine || user.is_admin) && onEdit && (
                 <button onClick={()=>{ setEditing(e=>!e); setEditStart(booking.start); setEditDur(booking.end-booking.start); }}
                   title="Spremeni čas"
                   style={{ width:30, height:30, borderRadius:'50%', background:editing?accent+'33':c.bgMid, border:`1.5px solid ${editing?accent:c.border}`, color:editing?accent:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -1081,13 +1081,13 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
           </button>
         </div>
 
-        {isMine && onDelete && !confirmDel && (
+        {(isMine || user.is_admin) && onDelete && !confirmDel && (
           <button onClick={()=>setConfirmDel(true)}
             style={{ padding:'12px', border:'none', borderTop:`1px solid ${c.border}`, background:'transparent', color:'#FF3B30', fontSize:13, fontWeight:600, cursor:'pointer', width:'100%' }}>
             {t.deleteBooking}
           </button>
         )}
-        {isMine && onDelete && confirmDel && (
+        {(isMine || user.is_admin) && onDelete && confirmDel && (
           <div style={{ borderTop:`1px solid ${c.border}`, padding:'12px 16px', display:'flex', alignItems:'center', gap:10 }}>
             <span style={{ flex:1, fontSize:13, color:c.text, fontWeight:500 }}>{t.confirmDeleteBooking}</span>
             <button onClick={()=>setConfirmDel(false)}
