@@ -676,10 +676,23 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
             </div>
             {showPersonPicker && (
               <div style={{ background:c.bgMid, borderRadius:12, padding:'10px 12px', display:'flex', flexDirection:'column', gap:6 }}>
-                <p style={{ fontSize:11, fontWeight:700, color:personErr?'#FF3B30':c.textMuted, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:2 }}>
+                {/* Reserve all button */}
+                {(() => {
+                  const others = users.filter(u=>u.id!==user.id);
+                  const allSel = others.length>0 && others.every(u=>selectedPersons.includes(u.id));
+                  return (
+                    <button onClick={()=>{ if(allSel) setSelectedPersons([]); else setSelectedPersons(others.map(u=>u.id)); setPersonErr(false); }}
+                      style={{ padding:'9px 12px', borderRadius:10, border:`1.5px solid ${allSel?c.green:c.border}`, background:allSel?c.green+'22':'transparent', color:allSel?c.green:c.textSub, fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      {allSel ? 'Odznači vse' : 'Rezerviraj vse'}
+                    </button>
+                  );
+                })()}
+                <div style={{ height:1, background:c.border, margin:'2px 0' }}/>
+                <p style={{ fontSize:11, fontWeight:700, color:personErr?'#FF3B30':c.textMuted, textTransform:'uppercase', letterSpacing:'0.05em' }}>
                   {personErr ? (t.minOnePerson||'Izberi vsaj 1 osebo') : (t.selectPeople||'Izberi osebe (min. 1)')}
                 </p>
-                {users.map(u=>{
+                {users.filter(u=>u.id!==user.id).map(u=>{
                   const sel = selectedPersons.includes(u.id);
                   return (
                     <button key={u.id} onClick={()=>togglePerson(u.id)}
