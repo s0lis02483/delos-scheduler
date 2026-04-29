@@ -576,10 +576,10 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
           </div>
 
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            <div style={{ display:'flex', gap:0, borderRadius:14, overflow:'hidden', border:`1px solid ${c.border}` }}>
-              {vehicleStatus.map((v,i)=>(
+            <div style={{ display:'flex', gap:8 }}>
+              {vehicleStatus.map((v)=>(
                 <button key={v.id} onClick={()=>book('car',v.id)} disabled={v.blocked}
-                  style={{ flex:1, padding:'14px 8px', border:'none', borderLeft:i>0?`1px solid ${v.blocked?c.border:c.blue+'55'}`:'none', background:v.blocked?c.bgMid:c.blue, color:v.blocked?c.textMuted:'#fff', fontSize:13, fontWeight:700, cursor:v.blocked?'not-allowed':'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, transition:'opacity 0.15s', position:'relative' }}>
+                  style={{ flex:1, padding:'14px 8px', borderRadius:14, border:'none', background:v.blocked?c.bgMid:c.blue, color:v.blocked?c.textMuted:'#fff', fontSize:13, fontWeight:700, cursor:v.blocked?'not-allowed':'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, transition:'opacity 0.15s' }}>
                   <span style={{ fontSize:18 }}>{v.blocked?'🔒':v.icon}</span>
                   <span>{v.label}</span>
                   {v.blocked && <span style={{ fontSize:10, fontWeight:400, opacity:0.75, textAlign:'center', lineHeight:1.2 }}>{v.bookedBy}</span>}
