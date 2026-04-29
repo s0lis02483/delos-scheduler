@@ -49,8 +49,14 @@ const sb = window.supabase.createClient(
   'https://qbayuslffeqwiutgbqot.supabase.co',
   'sb_publishable_mc5GV0D0-hsPzKD5rhyDQg_a3K5ZpYK'
 );
-function dbToBooking(r) { return { id:r.id, type:r.type, userId:r.user_id, date:r.date, start:r.start_min, end:r.end_min, note:r.note||'' }; }
-function bookingToDb(b) { return { id:b.id, type:b.type, user_id:b.userId, date:b.date, start_min:b.start, end_min:b.end, note:b.note||'' }; }
+function dbToBooking(r) { return { id:r.id, type:r.type, vehicle:r.vehicle||null, userId:r.user_id, date:r.date, start:r.start_min, end:r.end_min, note:r.note||'' }; }
+function bookingToDb(b) { return { id:b.id, type:b.type, vehicle:b.vehicle||null, user_id:b.userId, date:b.date, start_min:b.start, end_min:b.end, note:b.note||'' }; }
+
+const VEHICLES = [
+  { id:'bmw1',  label:'BMW 1',  icon:'🚗' },
+  { id:'bmw2',  label:'BMW 2',  icon:'🚗' },
+  { id:'volvo', label:'Volvo',  icon:'🚙' },
+];
 
 // ─── Translations ──────────────────────────────────────────────────────────────
 
@@ -64,7 +70,7 @@ const T = {
     upcoming: 'Upcoming today', viewCal: 'View calendar →',
     noBookings: 'No bookings today', addBooking: '+ Add booking',
     earlier: 'Earlier', myTodos: 'My to-dos', addTodo: 'Add a to-do…',
-    carBooking: 'Car Booking', appointment: 'Appointment',
+    carBooking: 'Car Booking', appointment: 'Appointment', vehicleBooked: 'Booked by',
     duration: 'Duration', addNote: 'Add a note (optional)',
     nextAvailable: 'Next available:', bookedBy: 'Booked by',
     alreadyBooked: 'You already have a booking here',
@@ -94,7 +100,7 @@ const T = {
     upcoming: 'Danes na sporedu', viewCal: 'Odpri koledar →',
     noBookings: 'Danes ni rezervacij', addBooking: '+ Dodaj rezervacijo',
     earlier: 'Prej', myTodos: 'Moje naloge', addTodo: 'Dodaj nalogo…',
-    carBooking: 'Rezervacija vozila', appointment: 'Sestanek',
+    carBooking: 'Rezervacija vozila', appointment: 'Sestanek', vehicleBooked: 'Rezerviral/a',
     duration: 'Trajanje', addNote: 'Dodaj opombo (neobvezno)',
     nextAvailable: 'Naslednji prosti:', bookedBy: 'Rezerviral/a',
     alreadyBooked: 'Tukaj že imate rezervacijo',
@@ -160,17 +166,17 @@ function fmt12(minutes) { const h=Math.floor(minutes/60),m=minutes%60,ap=h>=12?'
 function fmtHour(h) { const ap=h>=12?'PM':'AM',hh=h>12?h-12:h===0?12:h; return `${hh} ${ap}`; }
 function sameDay(a,b) { return dateKey(a)===dateKey(b); }
 function hasOverlap(as,ae,bs,be) { return as<be && ae>bs; }
-function checkConflict(bookings,type,date,start,end,userId) {
+function checkConflict(bookings,type,date,start,end,userId,vehicle) {
   return bookings.filter(b => {
     if (b.date!==date) return false;
-    if (type==='car') return b.type==='car' && hasOverlap(start,end,b.start,b.end);
+    if (type==='car') return b.type==='car' && b.vehicle===vehicle && hasOverlap(start,end,b.start,b.end);
     if (type==='appointment') return b.type==='appointment' && b.userId===userId && hasOverlap(start,end,b.start,b.end);
     return false;
   });
 }
-function nextFreeSlot(bookings,type,date,duration,userId,startFrom) {
+function nextFreeSlot(bookings,type,date,duration,userId,startFrom,vehicle) {
   for (let s=startFrom; s+duration<=20*60; s+=30)
-    if (checkConflict(bookings,type,date,s,s+duration,userId).length===0) return s;
+    if (checkConflict(bookings,type,date,s,s+duration,userId,vehicle).length===0) return s;
   return null;
 }
 function greet(t) {
@@ -520,17 +526,27 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
   if (!slot) return null;
 
   const start=slot.hour*60+slot.minute, end=start+duration, dk=dateKey(slot.date);
-  const carConflicts=checkConflict(bookings,'car',dk,start,end,user.id);
-  const apptConflicts=checkConflict(bookings,'appointment',dk,start,end,user.id);
-  const carBlocked=carConflicts.length>0, apptBlocked=apptConflicts.length>0;
-  const nextCar=carBlocked?nextFreeSlot(bookings,'car',dk,duration,user.id,start):null;
-  const nextAppt=apptBlocked?nextFreeSlot(bookings,'appointment',dk,duration,user.id,start):null;
+  const apptConflicts=checkConflict(bookings,'appointment',dk,start,end,user.id,null);
+  const apptBlocked=apptConflicts.length>0;
+  const nextAppt=apptBlocked?nextFreeSlot(bookings,'appointment',dk,duration,user.id,start,null):null;
   const dayName=t.daysFull[slot.date.getDay()===0?6:slot.date.getDay()-1];
   const dateStr=`${dayName}, ${t.months[slot.date.getMonth()]} ${slot.date.getDate()}`;
 
-  function book(type) {
-    if (type==='car'&&carBlocked||type==='appointment'&&apptBlocked) return;
-    onBook({ type, date:dk, start, end, note:note.trim(), userId:user.id });
+  const vehicleStatus = VEHICLES.map(v => {
+    const conflicts = checkConflict(bookings,'car',dk,start,end,user.id,v.id);
+    const blocked = conflicts.length>0;
+    const next = blocked ? nextFreeSlot(bookings,'car',dk,duration,user.id,start,v.id) : null;
+    const bookedBy = blocked ? USERS.find(u=>u.id===conflicts[0]?.userId)?.name||'?' : null;
+    return { ...v, blocked, next, bookedBy };
+  });
+
+  function book(type, vehicle) {
+    if (type==='appointment'&&apptBlocked) return;
+    if (type==='car'&&vehicle) {
+      const vs = vehicleStatus.find(v=>v.id===vehicle);
+      if (vs?.blocked) return;
+    }
+    onBook({ type, vehicle:vehicle||null, date:dk, start, end, note:note.trim(), userId:user.id });
   }
 
   return (
@@ -560,21 +576,23 @@ function BookingSheet({ slot, user, bookings, onBook, onClose, tweaks, c, t }) {
           </div>
 
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {vehicleStatus.map(v=>(
+              <div key={v.id}>
+                <button onClick={()=>book('car',v.id)} disabled={v.blocked}
+                  style={{ width:'100%', padding:'13px 16px', borderRadius:14, border:'none', background:v.blocked?c.bgMid:c.blue, color:v.blocked?c.textMuted:'#fff', fontSize:15, fontWeight:600, cursor:v.blocked?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12 }}>
+                  <span style={{ fontSize:20 }}>{v.icon}</span>
+                  <div style={{ textAlign:'left' }}>
+                    <div>{v.label}</div>
+                    {v.blocked && <div style={{ fontSize:12, fontWeight:400, opacity:0.7, marginTop:1 }}>{t.vehicleBooked||'Booked by'} {v.bookedBy}</div>}
+                  </div>
+                  {!v.blocked && <svg style={{ marginLeft:'auto' }} width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10h6M10 7l3 3-3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  {v.blocked && <span style={{ marginLeft:'auto', fontSize:18 }}>🔒</span>}
+                </button>
+                {v.blocked&&v.next&&<p style={{ fontSize:12, color:c.textMuted, marginTop:5, paddingLeft:4 }}>{t.nextAvailable} <span style={{ color:c.blue, fontWeight:600 }}>{fmt12(v.next)}</span></p>}
+              </div>
+            ))}
             <div>
-              <button onClick={()=>book('car')} disabled={carBlocked}
-                style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:carBlocked?c.bgMid:c.blue, color:carBlocked?c.textMuted:'#fff', fontSize:16, fontWeight:600, cursor:carBlocked?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12 }}>
-                <span style={{ fontSize:22 }}>🚗</span>
-                <div style={{ textAlign:'left' }}>
-                  <div>{t.carBooking}</div>
-                  {carBlocked && <div style={{ fontSize:12, fontWeight:400, opacity:0.7, marginTop:1 }}>{t.bookedBy} {USERS.find(u=>u.id===carConflicts[0]?.userId)?.name||'?'}</div>}
-                </div>
-                {!carBlocked && <svg style={{ marginLeft:'auto' }} width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10h6M10 7l3 3-3 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                {carBlocked && <span style={{ marginLeft:'auto', fontSize:18 }}>🔒</span>}
-              </button>
-              {carBlocked&&nextCar&&<p style={{ fontSize:12, color:c.textMuted, marginTop:6, paddingLeft:4 }}>{t.nextAvailable} <span style={{ color:c.blue, fontWeight:600 }}>{fmt12(nextCar)}</span></p>}
-            </div>
-            <div>
-              <button onClick={()=>book('appointment')} disabled={apptBlocked}
+              <button onClick={()=>book('appointment',null)} disabled={apptBlocked}
                 style={{ width:'100%', padding:'16px', borderRadius:14, border:'none', background:apptBlocked?c.bgMid:c.green, color:apptBlocked?c.textMuted:'#fff', fontSize:16, fontWeight:600, cursor:apptBlocked?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:12 }}>
                 <span style={{ fontSize:22 }}>📋</span>
                 <div style={{ textAlign:'left' }}>
@@ -714,6 +732,8 @@ function BookingDetails({ booking, user, users, notes, onClose, onDelete, c, t }
   const isCar = booking.type==='car';
   const accent = isCar ? c.blue : c.green;
   const isMine = booking.userId===user.id;
+  const vehInfo = isCar&&booking.vehicle ? VEHICLES.find(v=>v.id===booking.vehicle) : null;
+  const sessionLabel = isCar ? (vehInfo?vehInfo.label:t.carBooking) : t.appointment;
   const myNotes = (notes||[]).filter(n=>n.booking_id===booking.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
 
   useEffect(()=>{
@@ -742,8 +762,8 @@ function BookingDetails({ booking, user, users, notes, onClose, onDelete, c, t }
         <div style={{ padding:'18px 20px 14px', borderBottom:`1px solid ${c.border}`, display:'flex', alignItems:'flex-start', gap:10 }}>
           <div style={{ width:4, alignSelf:'stretch', background:accent, borderRadius:2, flexShrink:0 }}/>
           <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{isCar?t.carBooking:t.appointment}</p>
-            <p style={{ fontSize:17, fontWeight:700, color:c.text, marginTop:3, wordBreak:'break-word' }}>{booking.note||(isCar?t.carBooking:t.appointment)}</p>
+            <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{sessionLabel}</p>
+            <p style={{ fontSize:17, fontWeight:700, color:c.text, marginTop:3, wordBreak:'break-word' }}>{booking.note||sessionLabel}</p>
             <p style={{ fontSize:12, color:c.textMuted, marginTop:4 }}>{owner?.name} · {fmt12(booking.start)} – {fmt12(booking.end)}</p>
           </div>
           <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', background:c.bgMid, border:'none', color:c.textSub, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -885,13 +905,16 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                   const top=minutesToY(b.start), height=((b.end-b.start)/30)*slotH-3;
                   const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car';
                   const bg=isCar?c.blue:c.green;
+                  const veh=isCar&&b.vehicle?VEHICLES.find(v=>v.id===b.vehicle):null;
+                  const blockLabel=isCar?(veh?veh.label:t.carBooking):t.appointment;
+                  const blockIcon=isCar?(veh?veh.icon:'🚗'):'📋';
                   return (
                     <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
                       style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:8, padding:'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box' }}>
                       <div style={{ fontSize:11, fontWeight:700, color:bg, lineHeight:1.3 }}>
-                        {isCar?'🚗':'📋'} {b.note||(isCar?t.carBooking:t.appointment)}
+                        {blockIcon} {b.note||blockLabel}
                       </div>
-                      {height>35&&<div style={{ fontSize:10, color:bg, opacity:0.7, marginTop:2 }}>{owner?.name} · {fmt12(b.start)}</div>}
+                      {height>35&&<div style={{ fontSize:10, color:bg, opacity:0.7, marginTop:2 }}>{veh&&!b.note?'':blockLabel+' · '}{owner?.name} · {fmt12(b.start)}</div>}
                     </div>
                   );
                 })}
@@ -924,8 +947,8 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   const [showPicker, setShowPicker]=useState(false);
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
-  async function handleBook({type,date,start,end,note,userId}) {
-    const b={id:`b${Date.now()}`,type,userId,date,start,end,note};
+  async function handleBook({type,vehicle,date,start,end,note,userId}) {
+    const b={id:`b${Date.now()}`,type,vehicle:vehicle||null,userId,date,start,end,note};
     setBookings(prev=>[...prev,b]);
     setSlot(null);
     const {error} = await sb.from('bookings').insert(bookingToDb(b));
@@ -934,7 +957,8 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       showToast('❌ ' + error.message, '#FF3B30');
       return;
     }
-    showToast(type==='car'?`🚗 ${t.carBooking}!`:`📋 ${t.appointment}!`, type==='car'?tweaks.primaryColor:tweaks.appointmentColor);
+    const veh=vehicle?VEHICLES.find(v=>v.id===vehicle):null;
+    showToast(type==='car'?`🚗 ${veh?veh.label:t.carBooking}!`:`📋 ${t.appointment}!`, type==='car'?tweaks.primaryColor:tweaks.appointmentColor);
   }
 
   const blue=tweaks.primaryColor||'#0E76BC';
