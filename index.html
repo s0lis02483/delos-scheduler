@@ -882,7 +882,8 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
     const bo = users.find(u=>u.id===b.userId);
     const veh = b.vehicle ? VEHICLES.find(v=>v.id===b.vehicle) : null;
     const what = b.type==='car' ? (veh?veh.label:'vozilo') : b.type==='person' ? 'sestanek' : 'sobo';
-    const isMe = b.userId===user.id;
+    const bParts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
+    const isMe = b.userId===user.id || bParts.includes(user.id);
     return isMe ? `Imaš ob ${fmt12(b.start)} rezerviran/o ${what}` : `${bo?.name||'?'} ima ob ${fmt12(b.start)} rezerviran/o ${what}`;
   }) : [];
 
