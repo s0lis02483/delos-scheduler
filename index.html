@@ -878,7 +878,7 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
 
 // ─── Booking Details Modal ───────────────────────────────────────────────────
 
-function BookingDetails({ booking, user, users, notes, allBookings, onClose, onDelete, onEdit, onEditParticipants, c, t }) {
+function BookingDetails({ booking, user, users, notes, setNotes, allBookings, onClose, onDelete, onEdit, onEditParticipants, c, t }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
@@ -894,8 +894,18 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
     const v = editNoteDraft.trim();
     setEditNoteId(null);
     if (!v || v === original.trim()) return;
-    const { error } = await sb.from('booking_notes').update({ text:v }).eq('id', noteId);
-    if (error) { console.error('Update note failed:', error); alert('Napaka pri shranjevanju opombe: '+error.message); }
+    // Optimistic local update — UI refreshes immediately
+    if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:v} : n));
+    const { data, error } = await sb.from('booking_notes').update({ text:v }).eq('id', noteId).select();
+    if (error) {
+      console.error('Update note failed:', error);
+      alert('Napaka pri shranjevanju opombe: '+error.message);
+      if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:original} : n));
+    } else if (!data || data.length===0) {
+      console.error('Update returned 0 rows — RLS likely blocking');
+      alert('Opombe ni mogoče shraniti (RLS blokira UPDATE). V Supabase poženi: ALTER TABLE booking_notes DISABLE ROW LEVEL SECURITY;');
+      if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:original} : n));
+    }
   }
   function startEditNote(n) {
     setEditNoteId(n.id);
@@ -1267,7 +1277,7 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
 
 // ─── Calendar View ────────────────────────────────────────────────────────────
 
-function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, users, notes, c, t }) {
+function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slot, users, notes, setNotes, c, t }) {
   const [openBooking, setOpenBooking] = useState(null);
   const liveBooking = openBooking ? bookings.find(b=>b.id===openBooking.id) : null;
   const [view, setView]=useState('week');
@@ -1359,7 +1369,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       </div>
 
       {slot&&<BookingSheet slot={slot} user={user} bookings={bookings} users={users} onBook={handleBook} onClose={()=>setSlot(null)} tweaks={tweaks} c={c} t={t}/>}
-      {liveBooking&&<BookingDetails booking={liveBooking} user={user} users={users} notes={notes} allBookings={bookings} c={c} t={t}
+      {liveBooking&&<BookingDetails booking={liveBooking} user={user} users={users} notes={notes} setNotes={setNotes} allBookings={bookings} c={c} t={t}
         onClose={()=>setOpenBooking(null)}
         onDelete={async(b)=>{ setOpenBooking(null); setBookings(prev=>prev.filter(x=>x.id!==b.id)); await sb.from('bookings').delete().eq('id',b.id); }}
         onEdit={async(id,newStart,newEnd)=>{
@@ -1468,7 +1478,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
       <div className="main-area" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
         {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
-        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} notes={notes} c={c} t={t}/>}
+        {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} notes={notes} setNotes={setNotes} c={c} t={t}/>}
       </div>
 
       {/* Mobile tab bar */}
