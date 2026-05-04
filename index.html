@@ -885,8 +885,21 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
   const [editing, setEditing] = useState(false);
   const [editStart, setEditStart] = useState(booking ? booking.start : 0);
   const [editDur, setEditDur] = useState(booking ? booking.end - booking.start : 60);
+  const [editNoteId, setEditNoteId] = useState(null);
+  const [editNoteDraft, setEditNoteDraft] = useState('');
   const scrollRef = React.useRef(null);
   if (!booking) return null;
+
+  async function saveNoteInline(noteId, original) {
+    const v = editNoteDraft.trim();
+    setEditNoteId(null);
+    if (v === original.trim() || !v) return;
+    await sb.from('booking_notes').update({ text:v }).eq('id', noteId);
+  }
+  function startEditNote(n) {
+    setEditNoteId(n.id);
+    setEditNoteDraft(n.text);
+  }
 
   const owner = users.find(u=>u.id===booking.userId);
   const isCar = booking.type==='car';
@@ -1067,7 +1080,9 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
           ) : myNotes.map(n=>{
             const author = users.find(u=>u.id===n.user_id);
             const mine = n.user_id===user.id;
+            const canEdit = mine || user.is_admin;
             const isCreator = n.user_id===booking.userId;
+            const editingThis = editNoteId===n.id;
             if (isCreator) {
               return (
                 <div key={n.id} style={{ background:accent+'12', border:`1px solid ${accent}33`, borderLeft:`3px solid ${accent}`, borderRadius:10, padding:'10px 12px', marginBottom:10 }}>
@@ -1076,7 +1091,17 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
                     <span style={{ fontSize:11, fontWeight:700, color:accent, textTransform:'uppercase', letterSpacing:'0.05em' }}>{t.creatorNote} {author?.name?.split(' ')[0]||''}</span>
                     <span style={{ fontSize:10, color:c.textMuted, marginLeft:'auto' }}>{fmtTs(n.created_at)}</span>
                   </div>
-                  <p style={{ fontSize:13, color:c.text, lineHeight:1.45, wordBreak:'break-word' }}>{n.text}</p>
+                  {editingThis ? (
+                    <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
+                      onBlur={()=>saveNoteInline(n.id, n.text)}
+                      onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
+                      rows={Math.max(1, editNoteDraft.split('\n').length)}
+                      style={{ width:'100%', resize:'none', padding:'6px 8px', borderRadius:8, border:`1px solid ${accent}66`, background:c.bg, color:c.text, fontSize:13, fontFamily:'inherit', lineHeight:1.45, outline:'none', boxSizing:'border-box' }}/>
+                  ) : (
+                    <p onClick={canEdit?()=>startEditNote(n):undefined}
+                      style={{ fontSize:13, color:c.text, lineHeight:1.45, wordBreak:'break-word', cursor:canEdit?'text':'default', minHeight:canEdit?'1.45em':undefined }}
+                      title={canEdit?'Klikni za urejanje':undefined}>{n.text}</p>
+                  )}
                 </div>
               );
             }
@@ -1088,7 +1113,17 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
                     <span style={{ fontSize:11, fontWeight:600, color:c.textSub }}>{author?.name||'?'}</span>
                     <span style={{ fontSize:10, color:c.textMuted }}>{fmtTs(n.created_at)}</span>
                   </div>
-                  <div style={{ background:mine?c.blue:c.bgMid, color:mine?'#fff':c.text, padding:'8px 11px', borderRadius:12, fontSize:13, lineHeight:1.4, wordBreak:'break-word' }}>{n.text}</div>
+                  {editingThis ? (
+                    <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
+                      onBlur={()=>saveNoteInline(n.id, n.text)}
+                      onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
+                      rows={Math.max(1, editNoteDraft.split('\n').length)}
+                      style={{ resize:'none', padding:'8px 11px', borderRadius:12, border:`1px solid ${c.border}`, background:c.bgMid, color:c.text, fontSize:13, fontFamily:'inherit', lineHeight:1.4, outline:'none', minWidth:120 }}/>
+                  ) : (
+                    <div onClick={canEdit?()=>startEditNote(n):undefined}
+                      style={{ background:mine?c.blue:c.bgMid, color:mine?'#fff':c.text, padding:'8px 11px', borderRadius:12, fontSize:13, lineHeight:1.4, wordBreak:'break-word', cursor:canEdit?'text':'default' }}
+                      title={canEdit?'Klikni za urejanje':undefined}>{n.text}</div>
+                  )}
                 </div>
               </div>
             );
