@@ -1192,13 +1192,13 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                   const blockLabel=isCar?(veh?veh.label:t.carBooking):isPerson?participantNames:t.appointment;
                   const blockIcon=isCar?(veh?veh.icon:'🚗'):isPerson?'👤':'🏠';
                   const isSmall = height < 32;
+                  const ownerFirst = owner?.name?.split(' ')[0]||'';
                   return (
                     <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
                       style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:isSmall?5:8, padding:isSmall?'2px 6px':'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-                      <div style={{ fontSize:isSmall?11:14, fontWeight:700, color:bg, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        {blockIcon} {b.note||blockLabel}
+                      <div style={{ fontSize:14, fontWeight:700, color:bg, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {blockIcon} {b.note||blockLabel} · {ownerFirst}
                       </div>
-                      {height>35&&<div style={{ fontSize:13, color:bg, opacity:0.7, marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{owner?.name} · {fmt12(b.start)}</div>}
                     </div>
                   );
                 })}
