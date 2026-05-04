@@ -890,21 +890,32 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
   const scrollRef = React.useRef(null);
   if (!booking) return null;
 
-  async function saveNoteInline(noteId, original) {
+  async function saveNoteInline(note) {
     const v = editNoteDraft.trim();
     setEditNoteId(null);
-    if (!v || v === original.trim()) return;
+    if (v === note.text.trim()) return;
+    if (!v) {
+      // Empty text → delete the note entirely
+      if (setNotes) setNotes(prev => prev.filter(n => n.id !== note.id));
+      const { error } = await sb.from('booking_notes').delete().eq('id', note.id);
+      if (error) {
+        console.error('Delete empty note failed:', error);
+        alert('Napaka pri brisanju opombe: '+error.message);
+        if (setNotes) setNotes(prev => prev.some(n=>n.id===note.id) ? prev : [...prev, note].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)));
+      }
+      return;
+    }
     // Optimistic local update — UI refreshes immediately
-    if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:v} : n));
-    const { data, error } = await sb.from('booking_notes').update({ text:v }).eq('id', noteId).select();
+    if (setNotes) setNotes(prev => prev.map(n => n.id===note.id ? {...n, text:v} : n));
+    const { data, error } = await sb.from('booking_notes').update({ text:v }).eq('id', note.id).select();
     if (error) {
       console.error('Update note failed:', error);
       alert('Napaka pri shranjevanju opombe: '+error.message);
-      if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:original} : n));
+      if (setNotes) setNotes(prev => prev.map(n => n.id===note.id ? {...n, text:note.text} : n));
     } else if (!data || data.length===0) {
       console.error('Update returned 0 rows — RLS likely blocking');
       alert('Opombe ni mogoče shraniti (RLS blokira UPDATE). V Supabase poženi: ALTER TABLE booking_notes DISABLE ROW LEVEL SECURITY;');
-      if (setNotes) setNotes(prev => prev.map(n => n.id===noteId ? {...n, text:original} : n));
+      if (setNotes) setNotes(prev => prev.map(n => n.id===note.id ? {...n, text:note.text} : n));
     }
   }
   function startEditNote(n) {
@@ -1105,7 +1116,7 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
                   {editingThis ? (
                     <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
                       onFocus={e=>{ const v=e.target.value; e.target.setSelectionRange(v.length, v.length); }}
-                      onBlur={()=>saveNoteInline(n.id, n.text)}
+                      onBlur={()=>saveNoteInline(n)}
                       onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
                       rows={Math.max(1, editNoteDraft.split('\n').length)}
                       style={{ width:'100%', resize:'none', padding:'6px 8px', borderRadius:8, border:`1px solid ${accent}66`, background:c.bg, color:c.text, fontSize:13, fontFamily:'inherit', lineHeight:1.45, outline:'none', boxSizing:'border-box' }}/>
@@ -1128,7 +1139,7 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
                   {editingThis ? (
                     <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
                       onFocus={e=>{ const v=e.target.value; e.target.setSelectionRange(v.length, v.length); }}
-                      onBlur={()=>saveNoteInline(n.id, n.text)}
+                      onBlur={()=>saveNoteInline(n)}
                       onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
                       rows={Math.max(1, editNoteDraft.split('\n').length)}
                       style={{ resize:'none', padding:'8px 11px', borderRadius:12, border:`1px solid ${c.border}`, background:c.bgMid, color:c.text, fontSize:13, fontFamily:'inherit', lineHeight:1.4, outline:'none', minWidth:120 }}/>
