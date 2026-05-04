@@ -893,8 +893,9 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
   async function saveNoteInline(noteId, original) {
     const v = editNoteDraft.trim();
     setEditNoteId(null);
-    if (v === original.trim() || !v) return;
-    await sb.from('booking_notes').update({ text:v }).eq('id', noteId);
+    if (!v || v === original.trim()) return;
+    const { error } = await sb.from('booking_notes').update({ text:v }).eq('id', noteId);
+    if (error) { console.error('Update note failed:', error); alert('Napaka pri shranjevanju opombe: '+error.message); }
   }
   function startEditNote(n) {
     setEditNoteId(n.id);
@@ -1093,6 +1094,7 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
                   </div>
                   {editingThis ? (
                     <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
+                      onFocus={e=>{ const v=e.target.value; e.target.setSelectionRange(v.length, v.length); }}
                       onBlur={()=>saveNoteInline(n.id, n.text)}
                       onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
                       rows={Math.max(1, editNoteDraft.split('\n').length)}
@@ -1115,6 +1117,7 @@ function BookingDetails({ booking, user, users, notes, allBookings, onClose, onD
                   </div>
                   {editingThis ? (
                     <textarea autoFocus value={editNoteDraft} onChange={e=>setEditNoteDraft(e.target.value)}
+                      onFocus={e=>{ const v=e.target.value; e.target.setSelectionRange(v.length, v.length); }}
                       onBlur={()=>saveNoteInline(n.id, n.text)}
                       onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); e.target.blur(); } if(e.key==='Escape'){ setEditNoteId(null); } }}
                       rows={Math.max(1, editNoteDraft.split('\n').length)}
