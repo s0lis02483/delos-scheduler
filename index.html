@@ -75,6 +75,7 @@ const T = {
     earlier: 'Earlier', myTodos: 'My to-dos', addTodo: 'Add a to-do…',
     carBooking: 'Car Booking', appointment: 'Appointment', vehicleBooked: 'Booked by',
     bookRoom: 'Book Room', bookPerson: 'Book Person', selectPeople: 'Select people (min. 1)', minOnePerson: 'Select at least 1 person',
+    assignTask: 'Assign task', taskLabel: 'Task', selectAssignee: 'Assign to…', assignBtn: 'Assign', taskAssigned: 'Task assigned!', assignedBy: 'Assigned by', taskNotePh: 'What needs to be done?', taskLegend: 'Task',
     duration: 'Duration', addNote: 'Add a note (optional)',
     nextAvailable: 'Next available:', bookedBy: 'Booked by',
     alreadyBooked: 'You already have a booking here',
@@ -106,6 +107,7 @@ const T = {
     earlier: 'Prej', myTodos: 'Moje naloge', addTodo: 'Dodaj nalogo…',
     carBooking: 'Rezervacija vozila', appointment: 'Sestanek', vehicleBooked: 'Rezerviral/a',
     bookRoom: 'Rezerviraj sobo', bookPerson: 'Rezerviraj osebo', selectPeople: 'Izberi osebe (min. 1)', minOnePerson: 'Izberi vsaj 1 osebo',
+    assignTask: 'Dodeli nalogo', taskLabel: 'Naloga', selectAssignee: 'Dodeli osebi…', assignBtn: 'Dodeli', taskAssigned: 'Naloga dodeljena!', assignedBy: 'Dodelil/a', taskNotePh: 'Kaj je treba narediti?', taskLegend: 'Naloga',
     duration: 'Trajanje', addNote: 'Dodaj opombo (neobvezno)',
     nextAvailable: 'Naslednji prosti:', bookedBy: 'Rezerviral/a',
     alreadyBooked: 'Tukaj že imate rezervacijo',
@@ -148,6 +150,8 @@ function mkTheme(dark, primaryColor, appointmentColor) {
     blue, green,
     blueBg:      dark ? '#0E76BC28' : '#EBF4FB',
     greenBg:     dark ? '#1A9B5C28' : '#EDFBF4',
+    task:        dark ? '#FF9F0A' : '#F5871F',
+    taskBg:      dark ? '#FF9F0A26' : '#FFF3E6',
     blueAmt:     blue + '22',
     shadow:      dark ? '0 2px 24px rgba(0,0,0,0.6)' : '0 2px 24px rgba(0,0,0,0.07)',
     sheetShadow: dark ? '0 -4px 40px rgba(0,0,0,0.5)' : '0 -4px 40px rgba(0,0,0,0.12)',
@@ -601,6 +605,10 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
   const [personErr, setPersonErr] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignee, setAssignee] = useState(null);
+  const [assignErr, setAssignErr] = useState(false);
+  const [taskNote, setTaskNote] = useState('');
 
   const vehicleStatus = VEHICLES.map(v => {
     const conflicts = checkConflict(bookings,'car',dk,start,end,user.id,v.id);
@@ -628,6 +636,12 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
       return;
     }
     onBook({ type, vehicle:vehicle||null, participants:null, date:dk, start, end, note:note.trim(), userId:user.id });
+  }
+
+  function assignTask() {
+    if (!duration) return;
+    if (!assignee) { setAssignErr(true); return; }
+    onBook({ type:'task', vehicle:null, participants:[user.id], date:dk, start, end, note:taskNote.trim(), userId:assignee });
   }
 
   return (
@@ -741,6 +755,41 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
                 })()}
               </div>
             )}
+
+            {/* Assign task */}
+            <button onClick={()=>{ if(!duration) return; setShowAssign(p=>!p); setAssignErr(false); }} disabled={!duration}
+              style={{ width:'100%', padding:'14px 12px', borderRadius:14, border:`2px solid ${showAssign?c.task:(!duration?c.border:c.task+'66')}`, background:showAssign?c.task+'22':'transparent', color:!duration?c.textMuted:c.task, fontSize:14, fontWeight:700, cursor:!duration?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:10, opacity:!duration?0.5:1, transition:'all 0.2s' }}>
+              <span style={{ fontSize:20 }}>📌</span>
+              <span>{t.assignTask||'Dodeli nalogo'}</span>
+              <svg style={{ marginLeft:'auto' }} width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={showAssign?"M2 8l4-4 4 4":"M2 4l4 4 4-4"} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {showAssign && (
+              <div style={{ background:c.bgMid, borderRadius:12, padding:'10px 12px', display:'flex', flexDirection:'column', gap:8 }}>
+                <input value={taskNote} onChange={e=>setTaskNote(e.target.value)} placeholder={t.taskNotePh||'Kaj je treba narediti?'}
+                  style={{ padding:'10px 12px', borderRadius:10, border:`1.5px solid ${c.borderInput}`, background:c.bg, color:c.text, fontSize:13, outline:'none' }}
+                  onFocus={e=>e.target.style.borderColor=c.task} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
+                <p style={{ fontSize:11, fontWeight:700, color:assignErr?'#FF3B30':c.textMuted, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                  {assignErr ? (t.minOnePerson||'Izberi osebo') : (t.selectAssignee||'Dodeli osebi…')}
+                </p>
+                {users.filter(u=>u.id!==user.id).map(u=>{
+                  const sel = assignee===u.id;
+                  return (
+                    <button key={u.id} onClick={()=>{ setAssignee(sel?null:u.id); setAssignErr(false); }}
+                      style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, width:'100%', border:`1.5px solid ${sel?c.task:c.border}`, background:sel?c.task+'18':'transparent', cursor:'pointer' }}>
+                      <div style={{ width:28, height:28, borderRadius:'50%', background:sel?c.task+'33':c.blue+'22', color:sel?c.task:c.blue, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{u.initials}</div>
+                      <span style={{ fontSize:13, fontWeight:600, color:c.text, flex:1, textAlign:'left' }}>{u.name}</span>
+                      <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${sel?c.task:c.border}`, background:sel?c.task:'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {sel && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                    </button>
+                  );
+                })}
+                <button onClick={assignTask} disabled={!assignee}
+                  style={{ marginTop:4, padding:'11px', borderRadius:10, border:'none', background:assignee?c.task:c.bgSoft, color:assignee?'#fff':c.textMuted, fontWeight:700, fontSize:14, cursor:assignee?'pointer':'not-allowed' }}>
+                  {(t.assignBtn||'Dodeli')}{assignee?` → ${users.find(u=>u.id===assignee)?.name.split(' ')[0]}`:''}
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop:8, paddingBottom:8 }}>
@@ -803,15 +852,15 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
   const dateStr=`${t.daysFull[dayIdx]}, ${t.months[today.getMonth()]} ${today.getDate()}`;
 
   const EventRow=({b,dim})=>{
-    const isCar=b.type==='car', color=isCar?c.blue:c.green;
+    const isCar=b.type==='car', isTask=b.type==='task', color=isCar?c.blue:isTask?c.task:c.green;
     return (
       <div style={{ display:'flex', gap:12, alignItems:'flex-start', opacity:dim?0.4:1, padding:'10px 0', borderBottom:`1px solid ${c.borderSoft}` }}>
-        <div style={{ width:32, height:32, borderRadius:10, background:isCar?c.blueBg:c.greenBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>
-          {isCar?'🚗':'📋'}
+        <div style={{ width:32, height:32, borderRadius:10, background:isCar?c.blueBg:isTask?c.taskBg:c.greenBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>
+          {isCar?'🚗':isTask?'📌':'📋'}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:c.text, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-            {b.note||(isCar?t.carBooking:t.appointment)}
+            {b.note||(isCar?t.carBooking:isTask?(t.taskLabel||'Naloga'):t.appointment)}
           </div>
           <div style={{ fontSize:12, color:c.textMuted, marginTop:2 }}>{fmt12(b.start)} – {fmt12(b.end)}</div>
         </div>
@@ -925,10 +974,13 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
 
   const owner = users.find(u=>u.id===booking.userId);
   const isCar = booking.type==='car';
-  const accent = isCar ? c.blue : c.green;
-  const isMine = booking.userId===user.id;
+  const isTask = booking.type==='task';
+  const accent = isCar ? c.blue : isTask ? c.task : c.green;
+  const taskParts = isTask ? (Array.isArray(booking.participants) ? booking.participants : (booking.participants?String(booking.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[])) : [];
+  const taskAssigner = isTask ? users.find(u=>u.id===taskParts[0]) : null;
+  const isMine = booking.userId===user.id || (isTask && taskParts.includes(user.id));
   const vehInfo = isCar&&booking.vehicle ? VEHICLES.find(v=>v.id===booking.vehicle) : null;
-  const sessionLabel = isCar ? (vehInfo?vehInfo.label:t.carBooking) : t.appointment;
+  const sessionLabel = isCar ? (vehInfo?vehInfo.label:t.carBooking) : isTask ? (t.taskLabel||'Naloga') : t.appointment;
   const myNotes = (notes||[]).filter(n=>n.booking_id===booking.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
 
   const editEnd = editStart + editDur;
@@ -941,7 +993,7 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
   ).map(b => {
     const bo = users.find(u=>u.id===b.userId);
     const veh = b.vehicle ? VEHICLES.find(v=>v.id===b.vehicle) : null;
-    const what = b.type==='car' ? (veh?veh.label:'vozilo') : b.type==='person' ? 'sestanek' : 'sobo';
+    const what = b.type==='car' ? (veh?veh.label:'vozilo') : b.type==='person' ? 'sestanek' : b.type==='task' ? 'nalogo' : 'sobo';
     const bParts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
     const isMe = b.userId===user.id || bParts.includes(user.id);
     return isMe ? `Imaš ob ${fmt12(b.start)} rezerviran/o ${what}` : `${bo?.name||'?'} ima ob ${fmt12(b.start)} rezerviran/o ${what}`;
@@ -990,6 +1042,7 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
               <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{sessionLabel}</p>
               <p style={{ fontSize:17, fontWeight:700, color:c.text, marginTop:3, wordBreak:'break-word' }}>{booking.note||sessionLabel}</p>
               <p style={{ fontSize:12, color:c.textMuted, marginTop:4 }}>{owner?.name} · {fmt12(booking.start)} – {fmt12(booking.end)}</p>
+              {isTask && taskAssigner && <p style={{ fontSize:11, color:c.task, fontWeight:600, marginTop:3 }}>{t.assignedBy||'Dodelil/a'}: {taskAssigner.name}</p>}
             </div>
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
               {(isMine || user.is_admin) && onEdit && (
@@ -1244,17 +1297,17 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                 })}
                 {dayBkgs.map(b=>{
                   const top=minutesToY(b.start), height=((b.end-b.start)/30)*slotH-3;
-                  const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car', isPerson=b.type==='person';
-                  const bg=isCar?c.blue:c.green;
+                  const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car', isPerson=b.type==='person', isTask=b.type==='task';
+                  const bg=isCar?c.blue:isTask?c.task:c.green;
                   const veh=isCar&&b.vehicle?VEHICLES.find(v=>v.id===b.vehicle):null;
                   const participantNames=isPerson&&b.participants?b.participants.map(id=>users.find(u=>u.id===id)?.name?.split(' ')[0]||'?').join(', '):'';
-                  const blockLabel=isCar?(veh?veh.label:t.carBooking):isPerson?participantNames:t.appointment;
-                  const blockIcon=isCar?(veh?veh.icon:'🚗'):isPerson?'👤':'🏠';
+                  const blockLabel=isCar?(veh?veh.label:t.carBooking):isTask?(b.note||t.taskLabel||'Naloga'):isPerson?participantNames:t.appointment;
+                  const blockIcon=isCar?(veh?veh.icon:'🚗'):isTask?'📌':isPerson?'👤':'🏠';
                   const isSmall = height < 32;
                   const ownerFirst = owner?.name?.split(' ')[0]||'';
                   return (
                     <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
-                      style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:isSmall?5:8, padding:isSmall?'2px 6px':'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'flex-start' }}>
+                      style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:isTask?c.taskBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:isSmall?5:8, padding:isSmall?'2px 6px':'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'flex-start' }}>
                       {isSmall ? (
                         <div style={{ fontSize:14, fontWeight:700, color:bg, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                           {blockIcon} {b.note||blockLabel} · {ownerFirst}
@@ -1310,12 +1363,16 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       return;
     }
     const veh=vehicle?VEHICLES.find(v=>v.id===vehicle):null;
-    showToast(type==='car'?`🚗 ${veh?veh.label:t.carBooking}!`:`📋 ${t.appointment}!`, type==='car'?tweaks.primaryColor:tweaks.appointmentColor);
+    const toastMsg = type==='car' ? `🚗 ${veh?veh.label:t.carBooking}!` : type==='task' ? `📌 ${t.taskAssigned||'Naloga dodeljena!'}` : `📋 ${t.appointment}!`;
+    const toastCol = type==='car' ? tweaks.primaryColor : type==='task' ? '#F5871F' : tweaks.appointmentColor;
+    showToast(toastMsg, toastCol);
   }
 
   const blue=tweaks.primaryColor||'#0E76BC';
   const filteredBookings = filterUser==='all' ? bookings : bookings.filter(b=>{
     if (b.userId===filterUser) return true;
+    // Naloga (task) pripada samo izvajalcu (userId); dodeljevalec je v participants, a je v svojem osebnem koledarju NE sme videti
+    if (b.type==='task') return false;
     const parts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
     return parts.includes(filterUser);
   });
@@ -1377,6 +1434,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
       <div style={{ display:'flex', gap:16, padding:'7px 16px', borderTop:`1px solid ${c.border}`, flexShrink:0, justifyContent:'center', background:c.bg }}>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.blue }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.carLegend}</span></div>
         <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.green }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.apptLegend}</span></div>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:2, background:c.task }}/><span style={{ fontSize:11, color:c.textMuted }}>{t.taskLegend||'Naloga'}</span></div>
       </div>
 
       {slot&&<BookingSheet slot={slot} user={user} bookings={bookings} users={users} onBook={handleBook} onClose={()=>setSlot(null)} tweaks={tweaks} c={c} t={t}/>}
@@ -1438,8 +1496,8 @@ function Sidebar({ user, bookings, tweaks, today, activeTab, setActiveTab, onOpe
           <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{t.todaySchedule}</p>
           {mine.slice(0,4).map(b=>(
             <div key={b.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', borderBottom:`1px solid ${c.borderSoft}` }}>
-              <div style={{ width:4, height:4, borderRadius:'50%', background:b.type==='car'?c.blue:c.green, flexShrink:0 }}/>
-              <span style={{ fontSize:12, color:c.textSub, flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{b.note||(b.type==='car'?t.carBooking:t.appointment)}</span>
+              <div style={{ width:4, height:4, borderRadius:'50%', background:b.type==='car'?c.blue:b.type==='task'?c.task:c.green, flexShrink:0 }}/>
+              <span style={{ fontSize:12, color:c.textSub, flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{b.note||(b.type==='car'?t.carBooking:b.type==='task'?(t.taskLabel||'Naloga'):t.appointment)}</span>
               <span style={{ fontSize:11, color:c.textMuted, flexShrink:0 }}>{fmt12(b.start)}</span>
             </div>
           ))}
