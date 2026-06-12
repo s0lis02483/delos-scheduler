@@ -1275,6 +1275,31 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
 
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
 
+// Razporedi prekrivajoče dogodke v stolpce, da so vsi vidni eden ob drugem.
+// Vrne Map<booking, {col, cols}> kjer je col indeks stolpca in cols število stolpcev v gruči.
+function layoutOverlaps(events) {
+  const map = new Map();
+  const sorted = [...events].sort((a,b)=> a.start-b.start || a.end-b.end);
+  let cluster = [], columns = [], clusterEnd = -1;
+  function flush() {
+    const n = columns.length;
+    cluster.forEach(ev => { map.get(ev).cols = n; });
+    cluster = []; columns = []; clusterEnd = -1;
+  }
+  for (const ev of sorted) {
+    if (clusterEnd !== -1 && ev.start >= clusterEnd) flush();
+    let placed = false;
+    for (let i=0;i<columns.length;i++) {
+      if (columns[i] <= ev.start) { columns[i]=ev.end; map.set(ev,{col:i,cols:1}); placed=true; break; }
+    }
+    if (!placed) { columns.push(ev.end); map.set(ev,{col:columns.length-1,cols:1}); }
+    cluster.push(ev);
+    clusterEnd = Math.max(clusterEnd, ev.end);
+  }
+  flush();
+  return map;
+}
+
 function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBookingClick, user, tweaks, today, users, c, t }) {
   const startH=tweaks.startHour||7, endH=tweaks.endHour||20, slotH=52, timeW=52;
   const days=view==='week'?Array.from({length:7},(_,i)=>addDays(weekStart,i)):[focusDate];
@@ -1311,6 +1336,7 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
           </div>
           {days.map((d,di)=>{
             const dk=dateKey(d), dayBkgs=bookings.filter(b=>b.date===dk), isToday=sameDay(d,today);
+            const layout=layoutOverlaps(dayBkgs);
             return (
               <div key={di} style={{ flex:1, position:'relative', height:totalH+slotH, borderLeft:`1px solid ${c.border}`, minWidth:view==='week'?120:0 }}>
                 {hours.map(h=>(
@@ -1328,6 +1354,9 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                 })}
                 {dayBkgs.map(b=>{
                   const top=minutesToY(b.start), height=((b.end-b.start)/30)*slotH-3;
+                  const lay=layout.get(b)||{col:0,cols:1}, cols=lay.cols, col=lay.col, gap=3, li=4, ri=4;
+                  const blkLeft = cols>1 ? `calc(${li}px + ${col} * ((100% - ${li+ri}px - ${gap*(cols-1)}px) / ${cols} + ${gap}px))` : `${li}px`;
+                  const blkWidth = cols>1 ? `calc((100% - ${li+ri}px - ${gap*(cols-1)}px) / ${cols})` : `calc(100% - ${li+ri}px)`;
                   const owner=users.find(u=>u.id===b.userId), isCar=b.type==='car', isPerson=b.type==='person', isTask=b.type==='task';
                   const bg=isCar?c.blue:isTask?c.task:c.green;
                   const veh=isCar&&b.vehicle?VEHICLES.find(v=>v.id===b.vehicle):null;
@@ -1338,7 +1367,7 @@ function CalendarGrid({ view, weekStart, focusDate, bookings, onSlotClick, onBoo
                   const ownerFirst = owner?.name?.split(' ')[0]||'';
                   return (
                     <div key={b.id} onClick={(e)=>{ e.stopPropagation(); onBookingClick&&onBookingClick(b); }}
-                      style={{ position:'absolute', top, left:4, right:4, height, background:isCar?c.blueBg:isTask?c.taskBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:isSmall?5:8, padding:isSmall?'2px 6px':'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'flex-start' }}>
+                      style={{ position:'absolute', top, left:blkLeft, width:blkWidth, height, background:isCar?c.blueBg:isTask?c.taskBg:c.greenBg, border:`1.5px solid ${bg}22`, borderLeft:`3px solid ${bg}`, borderRadius:isSmall?5:8, padding:isSmall?'2px 6px':'5px 8px', zIndex:3, overflow:'hidden', cursor:'pointer', boxSizing:'border-box', display:'flex', flexDirection:'column', justifyContent:'flex-start' }}>
                       {isSmall ? (
                         <div style={{ fontSize:14, fontWeight:700, color:bg, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                           {blockIcon} {b.note||blockLabel} · {ownerFirst}
