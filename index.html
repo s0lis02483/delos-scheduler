@@ -75,7 +75,7 @@ const T = {
     earlier: 'Earlier', myTodos: 'My to-dos', addTodo: 'Add a to-do…',
     carBooking: 'Car Booking', appointment: 'Appointment', vehicleBooked: 'Booked by',
     bookRoom: 'Book Room', bookPerson: 'Book Person', selectPeople: 'Select people (min. 1)', minOnePerson: 'Select at least 1 person',
-    assignTask: 'Assign task', taskLabel: 'Task', selectAssignee: 'Assign to…', assignBtn: 'Assign', taskAssigned: 'Task assigned!', assignedBy: 'Assigned by', taskNotePh: 'What needs to be done?', taskLegend: 'Task',
+    assignTask: 'Assign task', taskLabel: 'Task', selectAssignee: 'Assign to…', selectAssignees: 'Assign to (min. 1)', assignBtn: 'Assign', taskAssigned: 'Task assigned!', assignedBy: 'Assigned by', taskNotePh: 'What needs to be done?', taskLegend: 'Task', forWhom: 'For', me: 'Me',
     duration: 'Duration', addNote: 'Add a note (optional)',
     nextAvailable: 'Next available:', bookedBy: 'Booked by',
     alreadyBooked: 'You already have a booking here',
@@ -107,7 +107,7 @@ const T = {
     earlier: 'Prej', myTodos: 'Moje naloge', addTodo: 'Dodaj nalogo…',
     carBooking: 'Rezervacija vozila', appointment: 'Sestanek', vehicleBooked: 'Rezerviral/a',
     bookRoom: 'Rezerviraj sobo', bookPerson: 'Rezerviraj osebo', selectPeople: 'Izberi osebe (min. 1)', minOnePerson: 'Izberi vsaj 1 osebo',
-    assignTask: 'Dodeli nalogo', taskLabel: 'Naloga', selectAssignee: 'Dodeli osebi…', assignBtn: 'Dodeli', taskAssigned: 'Naloga dodeljena!', assignedBy: 'Dodelil/a', taskNotePh: 'Kaj je treba narediti?', taskLegend: 'Naloga',
+    assignTask: 'Dodeli nalogo', taskLabel: 'Naloga', selectAssignee: 'Dodeli osebi…', selectAssignees: 'Dodeli osebam (min. 1)', assignBtn: 'Dodeli', taskAssigned: 'Naloga dodeljena!', assignedBy: 'Dodelil/a', taskNotePh: 'Kaj je treba narediti?', taskLegend: 'Naloga', forWhom: 'Za', me: 'Jaz',
     duration: 'Trajanje', addNote: 'Dodaj opombo (neobvezno)',
     nextAvailable: 'Naslednji prosti:', bookedBy: 'Rezerviral/a',
     alreadyBooked: 'Tukaj že imate rezervacijo',
@@ -591,12 +591,13 @@ function DurationPicker({ duration, onChange, c }) {
 function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c, t }) {
   const [duration, setDuration] = useState(null);
   const [note, setNote] = useState('');
+  const [recipient, setRecipient] = useState(user.id);
   if (!slot) return null;
 
   const start=slot.hour*60+slot.minute, end=start+(duration||0), dk=dateKey(slot.date);
-  const apptConflicts=checkConflict(bookings,'appointment',dk,start,end,user.id,null);
+  const apptConflicts=checkConflict(bookings,'appointment',dk,start,end,recipient,null);
   const apptBlocked=apptConflicts.length>0;
-  const nextAppt=apptBlocked?nextFreeSlot(bookings,'appointment',dk,duration,user.id,start,null):null;
+  const nextAppt=apptBlocked?nextFreeSlot(bookings,'appointment',dk,duration,recipient,start,null):null;
   const dayName=t.daysFull[slot.date.getDay()===0?6:slot.date.getDay()-1];
   const dateStr=`${dayName}, ${t.months[slot.date.getMonth()]} ${slot.date.getDate()}`;
 
@@ -606,9 +607,10 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
   const [showCustom, setShowCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [showAssign, setShowAssign] = useState(false);
-  const [assignee, setAssignee] = useState(null);
+  const [assignees, setAssignees] = useState([]);
   const [assignErr, setAssignErr] = useState(false);
   const [taskNote, setTaskNote] = useState('');
+  const [showRecipient, setShowRecipient] = useState(false);
 
   const vehicleStatus = VEHICLES.map(v => {
     const conflicts = checkConflict(bookings,'car',dk,start,end,user.id,v.id);
@@ -635,13 +637,17 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
       onBook({ type, vehicle:null, participants:selectedPersons, date:dk, start, end, note:note.trim(), userId:user.id });
       return;
     }
-    onBook({ type, vehicle:vehicle||null, participants:null, date:dk, start, end, note:note.trim(), userId:user.id });
+    onBook({ type, vehicle:vehicle||null, participants: recipient!==user.id ? [user.id] : null, date:dk, start, end, note:note.trim(), userId:recipient });
   }
 
+  function toggleAssignee(id) {
+    setAssignees(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+    setAssignErr(false);
+  }
   function assignTask() {
     if (!duration) return;
-    if (!assignee) { setAssignErr(true); return; }
-    onBook({ type:'task', vehicle:null, participants:[user.id], date:dk, start, end, note:taskNote.trim(), userId:assignee });
+    if (assignees.length===0) { setAssignErr(true); return; }
+    assignees.forEach(aid => onBook({ type:'task', vehicle:null, participants:[user.id], date:dk, start, end, note:taskNote.trim(), userId:aid }));
   }
 
   return (
@@ -659,6 +665,30 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
             </button>
           </div>
+
+          {/* Recipient: book for myself or assign a car/room to someone else */}
+          <div style={{ display:'flex', gap:8, marginTop:16, alignItems:'center', position:'relative' }}>
+            <p style={{ fontSize:12, color:c.textMuted, fontWeight:400 }}>{t.forWhom||'Za'}</p>
+            <button onClick={()=>setShowRecipient(p=>!p)}
+              style={{ padding:'6px 12px', borderRadius:20, border:`1.5px solid ${recipient!==user.id?c.task:c.borderInput}`, background:recipient!==user.id?c.task+'18':c.bg, color:recipient!==user.id?c.task:c.textSub, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+              <span style={{ width:20, height:20, borderRadius:'50%', background:recipient!==user.id?c.task:c.blue, color:'#fff', fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center' }}>{recipient===user.id?user.initials:(users.find(u=>u.id===recipient)?.initials||'?')}</span>
+              {recipient===user.id ? (t.me||'Jaz') : (users.find(u=>u.id===recipient)?.name.split(' ')[0]||'?')}
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            {showRecipient && (<>
+              <div onClick={()=>setShowRecipient(false)} style={{ position:'fixed', inset:0, zIndex:60 }}/>
+              <div style={{ position:'absolute', top:34, left:28, background:c.bgSoft, border:`1px solid ${c.border}`, borderRadius:12, padding:6, zIndex:61, minWidth:190, maxHeight:240, overflowY:'auto', boxShadow:c.shadow }}>
+                {[{id:user.id,name:(t.me||'Jaz'),initials:user.initials},...users.filter(u=>u.id!==user.id)].map(u=>(
+                  <button key={u.id} onClick={()=>{ setRecipient(u.id); setShowRecipient(false); }}
+                    style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 10px', borderRadius:8, border:'none', background:recipient===u.id?c.task+'18':'transparent', color:recipient===u.id?c.task:c.text, fontWeight:recipient===u.id?700:500, fontSize:13, cursor:'pointer', textAlign:'left' }}>
+                    <span style={{ width:22, height:22, borderRadius:'50%', background:c.blue+'33', color:c.blue, fontSize:9, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{u.initials}</span>
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            </>)}
+          </div>
+          {recipient!==user.id && <p style={{ fontSize:11, color:c.task, marginTop:6, fontWeight:500 }}>🚗 Avto / 🏠 soba bo dodeljena: {users.find(u=>u.id===recipient)?.name}</p>}
 
           <div style={{ display:'flex', gap:8, marginTop:16, marginBottom:14, alignItems:'center' }}>
             <p style={{ fontSize:12, color:duration?c.textMuted:'#FF9500', fontWeight:duration?400:700, transition:'color 0.2s' }}>{t.duration}</p>
@@ -769,12 +799,12 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
                   style={{ padding:'10px 12px', borderRadius:10, border:`1.5px solid ${c.borderInput}`, background:c.bg, color:c.text, fontSize:13, outline:'none' }}
                   onFocus={e=>e.target.style.borderColor=c.task} onBlur={e=>e.target.style.borderColor=c.borderInput}/>
                 <p style={{ fontSize:11, fontWeight:700, color:assignErr?'#FF3B30':c.textMuted, textTransform:'uppercase', letterSpacing:'0.05em' }}>
-                  {assignErr ? (t.minOnePerson||'Izberi osebo') : (t.selectAssignee||'Dodeli osebi…')}
+                  {assignErr ? (t.minOnePerson||'Izberi vsaj 1 osebo') : (t.selectAssignees||'Dodeli osebam (min. 1)')}
                 </p>
                 {users.filter(u=>u.id!==user.id).map(u=>{
-                  const sel = assignee===u.id;
+                  const sel = assignees.includes(u.id);
                   return (
-                    <button key={u.id} onClick={()=>{ setAssignee(sel?null:u.id); setAssignErr(false); }}
+                    <button key={u.id} onClick={()=>toggleAssignee(u.id)}
                       style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, width:'100%', border:`1.5px solid ${sel?c.task:c.border}`, background:sel?c.task+'18':'transparent', cursor:'pointer' }}>
                       <div style={{ width:28, height:28, borderRadius:'50%', background:sel?c.task+'33':c.blue+'22', color:sel?c.task:c.blue, fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{u.initials}</div>
                       <span style={{ fontSize:13, fontWeight:600, color:c.text, flex:1, textAlign:'left' }}>{u.name}</span>
@@ -784,9 +814,9 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
                     </button>
                   );
                 })}
-                <button onClick={assignTask} disabled={!assignee}
-                  style={{ marginTop:4, padding:'11px', borderRadius:10, border:'none', background:assignee?c.task:c.bgSoft, color:assignee?'#fff':c.textMuted, fontWeight:700, fontSize:14, cursor:assignee?'pointer':'not-allowed' }}>
-                  {(t.assignBtn||'Dodeli')}{assignee?` → ${users.find(u=>u.id===assignee)?.name.split(' ')[0]}`:''}
+                <button onClick={assignTask} disabled={assignees.length===0}
+                  style={{ marginTop:4, padding:'11px', borderRadius:10, border:'none', background:assignees.length>0?c.task:c.bgSoft, color:assignees.length>0?'#fff':c.textMuted, fontWeight:700, fontSize:14, cursor:assignees.length>0?'pointer':'not-allowed' }}>
+                  {(t.assignBtn||'Dodeli')}{assignees.length>0?` (${assignees.length})`:''}
                 </button>
               </div>
             )}
@@ -976,9 +1006,10 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
   const isCar = booking.type==='car';
   const isTask = booking.type==='task';
   const accent = isCar ? c.blue : isTask ? c.task : c.green;
-  const taskParts = isTask ? (Array.isArray(booking.participants) ? booking.participants : (booking.participants?String(booking.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[])) : [];
-  const taskAssigner = isTask ? users.find(u=>u.id===taskParts[0]) : null;
-  const isMine = booking.userId===user.id || (isTask && taskParts.includes(user.id));
+  const assignParts = booking.type!=='person' ? (Array.isArray(booking.participants) ? booking.participants : (booking.participants?String(booking.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[])) : [];
+  const assignerId = assignParts[0]||null;
+  const assigner = (assignerId && assignerId!==booking.userId) ? users.find(u=>u.id===assignerId) : null;
+  const isMine = booking.userId===user.id || assignerId===user.id;
   const vehInfo = isCar&&booking.vehicle ? VEHICLES.find(v=>v.id===booking.vehicle) : null;
   const sessionLabel = isCar ? (vehInfo?vehInfo.label:t.carBooking) : isTask ? (t.taskLabel||'Naloga') : t.appointment;
   const myNotes = (notes||[]).filter(n=>n.booking_id===booking.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
@@ -1042,7 +1073,7 @@ function BookingDetails({ booking, user, users, notes, setNotes, allBookings, on
               <p style={{ fontSize:11, color:c.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em' }}>{sessionLabel}</p>
               <p style={{ fontSize:17, fontWeight:700, color:c.text, marginTop:3, wordBreak:'break-word' }}>{booking.note||sessionLabel}</p>
               <p style={{ fontSize:12, color:c.textMuted, marginTop:4 }}>{owner?.name} · {fmt12(booking.start)} – {fmt12(booking.end)}</p>
-              {isTask && taskAssigner && <p style={{ fontSize:11, color:c.task, fontWeight:600, marginTop:3 }}>{t.assignedBy||'Dodelil/a'}: {taskAssigner.name}</p>}
+              {assigner && <p style={{ fontSize:11, color:accent, fontWeight:600, marginTop:3 }}>{t.assignedBy||'Dodelil/a'}: {assigner.name}</p>}
             </div>
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
               {(isMine || user.is_admin) && onEdit && (
@@ -1353,7 +1384,7 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
 
   function showToast(msg,color) { setToast({msg,color}); setTimeout(()=>setToast(null),2400); }
   async function handleBook({type,vehicle,participants,date,start,end,note,userId}) {
-    const b={id:`b${Date.now()}`,type,vehicle:vehicle||null,participants:participants||null,userId,date,start,end,note};
+    const b={id:`b${Date.now()}${Math.random().toString(36).slice(2,7)}`,type,vehicle:vehicle||null,participants:participants||null,userId,date,start,end,note};
     setBookings(prev=>[...prev,b]);
     setSlot(null);
     const {error} = await sb.from('bookings').insert(bookingToDb(b));
@@ -1371,8 +1402,9 @@ function CalendarView({ user, bookings, setBookings, tweaks, today, setSlot, slo
   const blue=tweaks.primaryColor||'#0E76BC';
   const filteredBookings = filterUser==='all' ? bookings : bookings.filter(b=>{
     if (b.userId===filterUser) return true;
-    // Naloga (task) pripada samo izvajalcu (userId); dodeljevalec je v participants, a je v svojem osebnem koledarju NE sme videti
-    if (b.type==='task') return false;
+    // Samo 'person' (sestanek) uporablja participants kot udeležence. Pri car/soba/task participants pomeni DODELJEVALCA,
+    // zato se taka rezervacija prikaže samo prejemniku (userId), dodeljevalcu pa v njegovem osebnem koledarju NE.
+    if (b.type!=='person') return false;
     const parts = Array.isArray(b.participants) ? b.participants : (b.participants?String(b.participants).replace(/[{}]/g,'').split(',').filter(Boolean):[]);
     return parts.includes(filterUser);
   });
