@@ -874,9 +874,27 @@ function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
     return ()=>sb.removeChannel(ch);
   },[user.id]);
 
-  function addTodo(e) { e.preventDefault(); const tx=newTodo.trim(); if(!tx)return; const id=`t${Date.now()}`; setTodos(p=>[...p,{id,text:tx,done:false}]); sb.from('todos').insert({id,user_id:user.id,text:tx,done:false}); setNewTodo(''); }
-  function toggleTodo(id) { setTodos(p=>p.map(t=>t.id===id?{...t,done:!t.done}:t)); sb.from('todos').update({done:todos.find(t=>t.id===id)?.done===false?true:false}).eq('id',id); }
-  function deleteTodo(id) { setTodos(p=>p.filter(t=>t.id!==id)); sb.from('todos').delete().eq('id',id); }
+  async function addTodo(e) {
+    e.preventDefault();
+    const tx=newTodo.trim(); if(!tx) return;
+    const id=`t${Date.now()}`;
+    setTodos(p=>[...p,{id,text:tx,done:false}]); setNewTodo('');
+    const { error } = await sb.from('todos').insert({id,user_id:user.id,text:tx,done:false});
+    if (error) { console.error('addTodo failed:', error); setTodos(p=>p.filter(t=>t.id!==id)); alert('Napaka pri shranjevanju naloge: '+error.message); }
+  }
+  async function toggleTodo(id) {
+    const cur=todos.find(t=>t.id===id); if(!cur) return;
+    const newDone=!cur.done;
+    setTodos(p=>p.map(t=>t.id===id?{...t,done:newDone}:t));
+    const { error } = await sb.from('todos').update({done:newDone}).eq('id',id);
+    if (error) { console.error('toggleTodo failed:', error); setTodos(p=>p.map(t=>t.id===id?{...t,done:cur.done}:t)); }
+  }
+  async function deleteTodo(id) {
+    const snapshot=todos;
+    setTodos(p=>p.filter(t=>t.id!==id));
+    const { error } = await sb.from('todos').delete().eq('id',id);
+    if (error) { console.error('deleteTodo failed:', error); setTodos(snapshot); }
+  }
 
   const dayIdx=today.getDay()===0?6:today.getDay()-1;
   const dateStr=`${t.daysFull[dayIdx]}, ${t.months[today.getMonth()]} ${today.getDate()}`;
