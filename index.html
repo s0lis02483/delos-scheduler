@@ -854,25 +854,14 @@ function BookingSheet({ slot, user, bookings, users, onBook, onClose, tweaks, c,
 
 // ─── Today Panel ──────────────────────────────────────────────────────────────
 
-function TodayPanel({ user, bookings, tweaks, today, onGoCalendar, c, t }) {
+function TodayPanel({ user, bookings, todos, setTodos, tweaks, today, onGoCalendar, c, t }) {
   const dk=dateKey(today);
   const now=new Date(), nowMin=now.getHours()*60+now.getMinutes();
   const myToday=bookings.filter(b=>b.date===dk&&b.userId===user.id).sort((a,b)=>a.start-b.start);
   const upcoming=myToday.filter(b=>b.end>nowMin);
   const past=myToday.filter(b=>b.end<=nowMin);
 
-  const [todos, setTodos]=useState([]);
   const [newTodo, setNewTodo]=useState('');
-
-  useEffect(()=>{
-    sb.from('todos').select('*').eq('user_id',user.id).order('created_at').then(({data})=>{ if(data) setTodos(data.map(r=>({id:r.id,text:r.text,done:r.done}))); });
-    const ch=sb.channel('todos-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'todos',filter:`user_id=eq.${user.id}`},(p)=>{
-      if(p.eventType==='INSERT') setTodos(prev=>prev.some(t=>t.id===p.new.id)?prev:[...prev,{id:p.new.id,text:p.new.text,done:p.new.done}]);
-      if(p.eventType==='UPDATE') setTodos(prev=>prev.map(t=>t.id===p.new.id?{...t,done:p.new.done}:t));
-      if(p.eventType==='DELETE') setTodos(prev=>prev.filter(t=>t.id!==p.old.id));
-    }).subscribe();
-    return ()=>sb.removeChannel(ch);
-  },[user.id]);
 
   async function addTodo(e) {
     e.preventDefault();
@@ -1594,6 +1583,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
   const [activeTab, setActiveTab]=useState('today');
   const [bookings, setBookings]=useState([]);
   const [notes, setNotes]=useState([]);
+  const [todos, setTodos]=useState([]);
   const [slot, setSlot]=useState(null);
   const [showSettings, setShowSettings]=useState(false);
 
@@ -1611,8 +1601,17 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
       if(p.eventType==='UPDATE') setNotes(prev=>prev.map(n=>n.id===p.new.id?p.new:n));
       if(p.eventType==='DELETE') setNotes(prev=>prev.filter(n=>n.id!==p.old.id));
     }).subscribe();
-    return ()=>{ sb.removeChannel(ch); sb.removeChannel(cn); };
-  },[]);
+
+    // To-do seznam naložimo enkrat tukaj (ne v TodayPanel), da ob preklopu zavihkov ne potrebuje ponovnega nalaganja
+    sb.from('todos').select('*').eq('user_id',user.id).order('created_at').then(({data})=>{ if(data) setTodos(data.map(r=>({id:r.id,text:r.text,done:r.done}))); });
+    const ct=sb.channel('todos-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'todos',filter:`user_id=eq.${user.id}`},(p)=>{
+      if(p.eventType==='INSERT') setTodos(prev=>prev.some(t=>t.id===p.new.id)?prev:[...prev,{id:p.new.id,text:p.new.text,done:p.new.done}]);
+      if(p.eventType==='UPDATE') setTodos(prev=>prev.map(t=>t.id===p.new.id?{...t,text:p.new.text,done:p.new.done}:t));
+      if(p.eventType==='DELETE') setTodos(prev=>prev.filter(t=>t.id!==p.old.id));
+    }).subscribe();
+
+    return ()=>{ sb.removeChannel(ch); sb.removeChannel(cn); sb.removeChannel(ct); };
+  },[user.id]);
 
   const t=T[lang]||T.en;
   const c=useMemo(()=>mkTheme(dark, tweaks.primaryColor, tweaks.appointmentColor),[dark, tweaks.primaryColor, tweaks.appointmentColor]);
@@ -1625,7 +1624,7 @@ function MainApp({ user, onLogout, tweaks, showTweaks, dark, lang, onToggleDark,
 
       <div className="main-area" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
 
-        {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
+        {activeTab==='today'&&<TodayPanel user={user} bookings={bookings} todos={todos} setTodos={setTodos} tweaks={tweaks} today={today} onGoCalendar={()=>setActiveTab('calendar')} c={c} t={t}/>}
         {activeTab==='calendar'&&<CalendarView user={user} bookings={bookings} setBookings={setBookings} tweaks={tweaks} today={today} setSlot={setSlot} slot={slot} users={users} notes={notes} setNotes={setNotes} c={c} t={t}/>}
       </div>
 
